@@ -1,0 +1,1 @@
+net use LPT1 \\wy3\DISPATCH /persistent:yes

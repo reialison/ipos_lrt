@@ -1,0 +1,10 @@
+ALTER TABLE `menus`
+ADD COLUMN `reorder_qty`  int NULL DEFAULT 0 AFTER `miaa_cat`;
+
+ALTER TABLE `settings`
+ADD COLUMN `neg_inv`  tinyint NULL DEFAULT 0 AFTER `backup_path`;
+
+
+
+ALTER TABLE `shift_entries`
+ADD COLUMN `memo`  varchar(255) NULL AFTER `datetime`;

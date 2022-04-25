@@ -1,0 +1,1 @@
+UPDATE menus SET `menu_name`="Birthday Promo",`menu_short_desc`="Birthday Promo" WHERE menu_code="PRO0004" AND menu_id=185;

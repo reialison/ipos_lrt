@@ -1,0 +1,18 @@
+select count(*) from trans_refs;
+select count(*) from trans_sales;
+select count(*) from trans_sales_items;
+select count(*) from trans_sales_menus;
+select count(*) from trans_sales_charges;
+select count(*) from trans_sales_discounts;
+select count(*) from trans_sales_menu_modifiers;
+select count(*) from trans_sales_payments;
+select count(*) from trans_sales_tax;
+select count(*) from trans_sales_no_tax;
+select count(*) from trans_receiving_menu;
+select count(*) from trans_receiving_details;
+select count(*) from trans_receiving_menu_details;
+select count(*) from trans_adjustments;
+select count(*) from trans_adjustment_details;
+select count(*) from trans_sales_local_tax ORDER BY sales_id;
+select count(*) from trans_sales_zero_rated ORDER BY sales_id;
+select count(*) from shift_entries;

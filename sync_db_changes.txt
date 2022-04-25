@@ -1,0 +1,87 @@
+DROP TABLE IF EXISTS `sync_types`;
+CREATE TABLE IF NOT EXISTS `sync_types` (
+  `sync_type_id` int(11) NOT NULL AUTO_INCREMENT,
+  `sync_type` varchar(100) NOT NULL,
+  PRIMARY KEY (`sync_type_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=3 ;
+
+--
+-- Dumping data for table `sync_types`
+--
+
+INSERT INTO `sync_types` (`sync_type_id`, `sync_type`) VALUES
+(1, 'local to main'),
+(2, 'main to local');
+SET FOREIGN_KEY_CHECKS=1;
+
+
+DROP TABLE IF EXISTS `sync_logs`;
+CREATE TABLE IF NOT EXISTS `sync_logs` (
+  `sync_id` int(11) NOT NULL AUTO_INCREMENT,
+  `transaction` varchar(250) DEFAULT NULL,
+  `type` varchar(250) DEFAULT NULL,
+  `status` int(11) DEFAULT '0',
+  `migrate_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `src_id` int(11) DEFAULT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `is_automated` tinyint(1) DEFAULT '0',
+  PRIMARY KEY (`sync_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+SET FOREIGN_KEY_CHECKS=1;
+
+ALTER TABLE trans_adjustment_details add sync_id int(11) null;
+ALTER TABLE trans_adjustments add sync_id int(11) null;
+ALTER TABLE trans_receiving_details add sync_id int(11) null;
+ALTER TABLE trans_receivings add sync_id int(11) null;
+ALTER TABLE trans_refs add sync_id int(11) null;
+ALTER TABLE trans_sales add sync_id int(11) null;
+ALTER TABLE trans_sales_charges add sync_id int(11) null;
+ALTER TABLE trans_sales_discounts add sync_id int(11) null;
+ALTER TABLE trans_sales_items add sync_id int(11) null;
+ALTER TABLE trans_sales_local_tax add sync_id int(11) null;
+ALTER TABLE trans_sales_loyalty_points add sync_id int(11) null;
+ALTER TABLE trans_sales_menu_modifiers add sync_id int(11) null;
+ALTER TABLE trans_sales_menus add sync_id int(11) null;
+ALTER TABLE trans_sales_no_tax add sync_id int(11) null;
+ALTER TABLE trans_sales_payments add sync_id int(11) null;
+ALTER TABLE trans_sales_tax add sync_id int(11) null;
+ALTER TABLE trans_sales_zero_rated add sync_id int(11) null;	
+ALTER TABLE trans_spoilage add sync_id int(11) null;	
+ALTER TABLE trans_spoilage_details add sync_id int(11) null;	
+ALTER TABLE trans_types add sync_id int(11) null;	
+ALTER TABLE trans_voids add sync_id int(11) null;	
+ALTER TABLE gift_cards add sync_id int(11) null; 
+ALTER TABLE table_activity add sync_id int(11) null; 
+ALTER TABLE loyalty_cards add sync_id int(11) null; 
+
+
+ALTER TABLE coupons add sync_id int(11) null; 
+ALTER TABLE customers_bank add sync_id int(11) null; 
+ALTER TABLE logs add sync_id int(11) null; 
+ALTER TABLE users add sync_id int(11) null; 
+
+
+
+/**ON MAIN**/
+ALTER TABLE customers_bank add   `type_id` int(11) DEFAULT NULL;
+ALTER TABLE customers_bank add  `trans_ref` varchar(40) DEFAULT NULL;
+ALTER TABLE customers_bank add   `remarks` longtext;
+
+
+ALTER TABLE trans_sales_charges add `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE trans_sales_discounts add `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE trans_sales_items add `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE trans_sales_local_tax add `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE trans_sales_loyalty_points add `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE trans_sales_menu_modifiers add `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE trans_sales_menus add `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE trans_sales_no_tax add `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+-- ALTER TABLE trans_sales_payments add `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE trans_sales_tax add `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE trans_sales_zero_rated add `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE trans_spoilage add `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE trans_spoilage_details add `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE trans_voids add `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE trans_refs add `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE users add `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+ALTER TABLE users add sync_id int(11) null; 

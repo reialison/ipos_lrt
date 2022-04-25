@@ -1,0 +1,27 @@
+ALTER TABLE `trans_sales`
+ADD COLUMN `total_gross`  double NULL DEFAULT 0 AFTER `sync_id`,
+ADD COLUMN `total_discount`  double NULL DEFAULT 0 AFTER `total_gross`,
+ADD COLUMN `total_charges`  double NULL DEFAULT 0 AFTER `total_discount`,
+ADD COLUMN `zero_rated`  double NULL DEFAULT 0 AFTER `total_charges`,
+ADD COLUMN `no_tax`  double NULL DEFAULT 0 AFTER `zero_rated`,
+ADD COLUMN `tax`  double NULL DEFAULT 0 AFTER `no_tax`,
+ADD COLUMN `local_tax`  double NULL DEFAULT 0 AFTER `tax`;
+
+
+ALTER TABLE `trans_sales_menus`
+ADD COLUMN `menu_name`  varchar(255) NULL AFTER `nocharge`;
+
+ALTER TABLE `trans_sales_items`
+ADD COLUMN `item_name`  varchar(255) NULL AFTER `nocharge`;
+
+ALTER TABLE `trans_sales_menu_modifiers`
+ADD COLUMN `menu_name`  varchar(255) NULL AFTER `datetime`,
+ADD COLUMN `mod_group_name`  varchar(255) NULL AFTER `menu_name`,
+ADD COLUMN `mod_name`  varchar(255) NULL AFTER `mod_group_name`;
+
+
+ALTER TABLE `trans_sales_menus`
+ADD COLUMN `is_takeout`  int NULL DEFAULT 0 AFTER `free_reason`;
+
+ALTER TABLE `trans_sales_items`
+ADD COLUMN `is_takeout`  int NULL DEFAULT 0 AFTER `item_name`;

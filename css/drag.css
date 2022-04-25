@@ -1,0 +1,20 @@
+.box {
+  width: 100%;
+  height: auto;
+}
+
+/*.box img {
+  float: right;
+}
+*/
+/*hr {
+  clear: both;
+}
+*/
+#dropped {
+  width: 100%;
+  height: 310px;
+	border-color: #000!important;
+	border: 1px solid !important;
+  /*background-color: #000;*/
+}

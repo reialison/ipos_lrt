@@ -1,0 +1,128 @@
+.ribbon_yellow{
+  margin-left: -18px;
+    margin-bottom: 9px;
+    background-color: #F1C40F;
+    color: #010100;
+    width: 80px;
+    padding: 7px;
+}
+
+.ribbon_yellow{
+  border-width: 0 10px 10px 0;
+    border-right-color: #222!important;
+    left: 0;
+}
+
+.ribbon_blue{
+  background-color: #337ab7;
+    color: #fff;
+    margin-left: 6px;
+    padding: 1px;
+    padding-right: 7px;
+    font-family: "Open Sans";
+    margin-bottom: 4px;
+    width: 100%;
+}
+
+ul.list_order li{
+  list-style-type: circle;
+  font-size: 18px;
+}
+
+.w100{
+  width:100%;
+  background: 0 0;
+  height: 60px;
+  font-size: 12px;
+  padding: 1px!important;
+}
+/*
+.portlet{
+  height:327px;
+}
+*/
+
+.clonable_div{
+  /*height: 327px;
+  margin-left: 3px;*/
+  margin: 3px;
+}
+.portlet-body{
+  padding-bottom: 0px!important;
+  margin-left: 0px;
+}
+
+.em_title{
+  font-size: 22px!important;
+}
+
+.port_neg20{
+  margin-top: -20px;
+}
+
+.todo-tasklist_ongoing, .todo-tasklist_completed{
+  display: inline-block;
+  width: 100%;
+      margin-left: 3px;
+}
+
+.tabbable-custom>.tab-content {
+    border-bottom: none!important;
+    border-left: none!important;
+    border-right: none!important;
+        overflow: -webkit-paged-x!important;
+
+}
+
+.tab-content{
+      margin-left: 10px;
+}
+
+.kitchen_icon{
+  font-size: 25px!important;
+    margin-top: -1px!important;
+}
+
+.kitchen_caption{
+      float: none!important;
+    display: block!important;
+}
+
+.kitchen_label{
+      margin: 0 auto;
+    display: block;
+    max-width: 50%;
+}
+
+.tabbable-custom>.nav-tabs>li>a{
+  font-size:18px!important;
+}
+
+.portlet.box.red-soft{
+  border-bottom: 2px solid #db7c7c!important;
+}
+
+ .portlet.box.green-sharp{
+    border-bottom: 2px solid #46cbd7!important;
+
+ }
+
+
+
+.clonable_div .portlet{
+  margin-right: 2px;
+}
+
+.custom_blue>.nav-tabs>li.active{
+  border-top: 3px solid #2ab4c0!important;
+}
+
+@media only screen and (min-width: 767px){
+   .w100{
+    font-size:14px!important;
+   }
+  /*.ribbon_blue{margin-left:70px!important;}*/
+}
+div.modal-body ul.list_order{
+  pointer-events: none;
+}
