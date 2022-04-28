@@ -338,7 +338,7 @@ class User extends CI_Controller {
         header("Location:" . base_url(). $file_name);
     }
 
-    public function upload_excel_db(){
+    public function upload_excel_db1(){
         $this->load->model('dine/main_model');
         $this->load->model('core/user_model');
 
@@ -446,6 +446,121 @@ class User extends CI_Controller {
                     $this->user_model->update_users($item,$item['id']);
                 }
             }
+
+            site_alert('User(s) successfully updated.','success');
+            unlink($temp['file']);
+        }
+        else{
+            site_alert($temp['error'],"error");
+        }
+        redirect(base_url()."user", 'refresh'); 
+    }
+
+    public function upload_excel_db(){
+        $this->load->model('dine/main_model');
+        $this->load->model('core/user_model');
+
+        $temp = $this->upload_temp('user_excel_temp');
+        if($temp['error'] == ""){
+            // echo 'dasda';die();
+            $now = $this->site_model->get_db_now('sql');
+            $this->load->library('excel');
+            $obj = PHPExcel_IOFactory::load($temp['file']);
+            $sheet = $obj->getActiveSheet()->toArray(null,true,true,true);
+            $count = count($sheet);
+            $start = 2;
+            $rows = array();
+
+            $dup_id = false;
+            $dup_username = false;
+            $dup_pin = false;
+
+            $ids = array();
+            $usernames = array();
+            $pins = array();
+            $items = array();
+
+            for($i=$start;$i<=$count;$i++){
+                if($sheet[$i]["A"] != ""){
+                    if(ENCRYPT_TXT_FILE){
+                        //uncomment below to if encrypted
+                        $line = explode(',',base64_decode($sheet[$i]["A"]));
+
+                        $sheet[$i]["A"] = isset($line[0]) ? $line[0] : '';
+                        $sheet[$i]["B"] = isset($line[1]) ? $line[1] : '';
+                        $sheet[$i]["C"] = isset($line[2]) ? $line[2] : '';
+                        $sheet[$i]["D"] = isset($line[3]) ? $line[3] : '';
+                        $sheet[$i]["E"] = isset($line[4]) ? $line[4] : '';
+                        $sheet[$i]["F"] = isset($line[5]) ? $line[5] : ''; 
+                        $sheet[$i]["G"] = isset($line[6]) ? $line[6] : '';
+                        $sheet[$i]["H"] = isset($line[7]) ? $line[7] : '';   
+                        //comment end
+                    }                 
+
+                    $role = $this->site_model->get_tbl('user_roles',array('role'=>$sheet[$i]["E"]));
+                                       
+                    if(in_array($sheet[$i]["H"], $ids)){
+                        $dup_id = true;
+                    }
+
+                    if(in_array($sheet[$i]["A"], $usernames)){
+                        $dup_username = true;
+                    }
+
+                    if(in_array($sheet[$i]["B"], $pins)){
+                        $dup_pin = true;
+                    }
+ 
+
+                    $items[] = array(
+                            "id"                => $sheet[$i]["H"],
+                            "username"          => $sheet[$i]["A"],
+                            "password"          => $sheet[$i]["B"],
+                            "pin"               => $sheet[$i]["B"],
+                            "fname"             => ucwords($sheet[$i]["C"]),
+                            "lname"             => ucwords($sheet[$i]["D"]),
+                            "role"              => $role ? $role[0]->id:4,
+                            "inactive"          => $sheet[$i]["F"] == 1 ? 0 : 1,
+                            "reg_date"          => date('Y-m-d H:i:s'),
+                            "gender"            => strtolower($sheet[$i]["G"]) == 'm' ? 'male' : 'female',
+                        ); 
+
+                    $ids[] = $sheet[$i]["H"];
+                    $usernames[] = $sheet[$i]["A"];
+                    $pins[] = $sheet[$i]["B"];                       
+                    
+                    
+                }
+            }
+
+            if($dup_username || $dup_pin || $dup_id){
+                site_alert('Upload failed. Duplicate id, username, and password is not allowed.',"error");
+
+                redirect(base_url()."user", 'refresh'); 
+            }
+
+            if(count($rows) > 0){
+                $dflt_schedule = 1;                
+                
+                ### INSERT USERS
+
+                $this->db->query('truncate table `users`');
+
+                $this->load->library('Db_manager');
+                $this->main_db = $this->db_manager->get_connection('main');
+
+                $this->main_db->trans_start();
+                    $this->main_db->query('truncate table `users`');
+                $this->main_db->trans_complete();
+                
+                $this->site_model->add_tbl_batch('users',$rows);
+            }
+
+            // if(count($items) > 0){
+            //     foreach($items as $item){
+            //         $this->user_model->update_users($item,$item['id']);
+            //     }
+            // }
 
             site_alert('User(s) successfully updated.','success');
             unlink($temp['file']);

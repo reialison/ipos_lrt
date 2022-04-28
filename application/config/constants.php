@@ -393,7 +393,7 @@ define('OPERATING_SYSTEM','Windows');
 
 	//for encryption
 	define('ENCRYPTED',false);
-	define('ENCRYPT_TXT_FILE',false); //TRUE para kay PasalubonganExpress
+	define('ENCRYPT_TXT_FILE',true); //TRUE para kay PasalubonganExpress
 
 	//for testing restart printer asdf456qwer789zxcv123
 	// define('restart_printer','C:/xampp/htdocs/ipos_viamare_evia_ramen_hakata/setup/portmap_test.bat');	
