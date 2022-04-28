@@ -18,7 +18,7 @@ $(document).ready(function(){
 								goTo('menu/form/'+id);
 							 },
 			noBtn1 		:   false,
-			btn1Txt		: 	"<i class='fa fa-upload '></i>Master Upload",				 				 	
+			btn1Txt		: 	"<i class='fa fa-upload '></i>Upload",				 				 	
 			btn1 		: 	function(data){
 								bootbox.dialog({
 								  message: baseUrl+'menu/upload_excel_form',

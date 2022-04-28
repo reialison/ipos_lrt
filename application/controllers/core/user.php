@@ -512,7 +512,7 @@ class User extends CI_Controller {
                     }
  
 
-                    $items[] = array(
+                    $rows[] = array(
                             "id"                => $sheet[$i]["H"],
                             "username"          => $sheet[$i]["A"],
                             "password"          => $sheet[$i]["B"],
@@ -546,6 +546,8 @@ class User extends CI_Controller {
 
                 $this->db->query('truncate table `users`');
 
+                $this->site_model->add_tbl_batch('users',$rows);
+
                 $this->load->library('Db_manager');
                 $this->main_db = $this->db_manager->get_connection('main');
 
@@ -553,7 +555,7 @@ class User extends CI_Controller {
                     $this->main_db->query('truncate table `users`');
                 $this->main_db->trans_complete();
                 
-                $this->site_model->add_tbl_batch('users',$rows);
+                // $this->main_model->add_trans_tbl_batch('users',$rows); not needed. done by execute_sync
             }
 
             // if(count($items) > 0){
@@ -562,7 +564,7 @@ class User extends CI_Controller {
             //     }
             // }
 
-            site_alert('User(s) successfully updated.','success');
+            site_alert('User(s) successfully uploaded.','success');
             unlink($temp['file']);
         }
         else{

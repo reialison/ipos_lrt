@@ -1680,6 +1680,9 @@ class Menu extends CI_Controller {
                         $sheet[$i]["J"] = isset($line[9]) ? $line[9] : ''; //no tax
                         $sheet[$i]["K"] = isset($line[10]) ? $line[10] : ''; //uom
                         $sheet[$i]["L"] = isset($line[11]) ? $line[11] : ''; //menu_id
+                        $sheet[$i]["M"] = isset($line[12]) ? $line[12] : ''; //cat_id
+                        $sheet[$i]["N"] = isset($line[13]) ? $line[13] : ''; //sub_cat_id
+                        $sheet[$i]["O"] = isset($line[14]) ? $line[14] : ''; //uom_id
                     //comment end
                     }
 
@@ -1698,6 +1701,9 @@ class Menu extends CI_Controller {
                         "no_tax"            => $sheet[$i]["J"],
                         "uom"               => $sheet[$i]["K"],
                         "menu_id"           => $sheet[$i]["L"],
+                        "menu_cat_id"       => $sheet[$i]["M"],
+                        "menu_sub_cat_id"   => $sheet[$i]["N"],
+                        "uom_id"            => $sheet[$i]["O"],
                     );
 
                     if(in_array($sheet[$i]["L"], $menu_ids)){
@@ -1741,19 +1747,21 @@ class Menu extends CI_Controller {
                         }
 
                         $cat_name = trim($row['category']);
-                        $menu_category_exist = $this->site_model->get_tbl('menu_categories',array('menu_cat_name'=>strtoupper($cat_name),'brand'=>$brand_id,'inactive'=>0));
+                        // $menu_category_exist = $this->site_model->get_tbl('menu_categories',array('menu_cat_name'=>strtoupper($cat_name),'brand'=>$brand_id,'inactive'=>0));
+                        $menu_category_exist = $this->site_model->get_tbl('menu_categories',array('menu_cat_id'=>$row['menu_cat_id'],'brand'=>$brand_id,'inactive'=>0));
 
                         if(!$menu_category_exist && $cat_name !=''){                                                     
 
-                            $dets = $this->manager_model->get_last_ids('menu_cat_id','menu_categories');
-                            if($dets){
-                                $id = $dets[0]->menu_cat_id + 1;
-                            }else{
-                                $id = 1;  
-                            }
+                            // $dets = $this->manager_model->get_last_ids('menu_cat_id','menu_categories');
+                            // if($dets){
+                            //     $id = $dets[0]->menu_cat_id + 1;
+                            // }else{
+                            //     $id = 1;  
+                            // }
 
                             $ins_categories = array(
-                                'menu_cat_id' => $id,
+                                // 'menu_cat_id' => $id,
+                                'menu_cat_id'   => $row['menu_cat_id'],
                                 'menu_cat_name' => strtoupper($cat_name),
                                 'menu_sched_id' => $dflt_schedule,
                                 'reg_date'      => $now,
@@ -1776,17 +1784,20 @@ class Menu extends CI_Controller {
                         }
 
                         $subcat_name = trim($row['subcategory']);
-                        $submenu_category_exist = $this->site_model->get_tbl('menu_subcategories',array('menu_sub_cat_name'=>strtoupper($subcat_name),'inactive'=>0));
+                        // $submenu_category_exist = $this->site_model->get_tbl('menu_subcategories',array('menu_sub_cat_name'=>strtoupper($subcat_name),'inactive'=>0));
+                        $submenu_category_exist = $this->site_model->get_tbl('menu_subcategories',array('menu_sub_cat_id'=>$row['menu_sub_cat_id'],'inactive'=>0));
+
                         if(!$submenu_category_exist && $subcat_name  != ''){
-                            $dets = $this->manager_model->get_last_ids('menu_sub_cat_id','menu_subcategories');
-                            if($dets){
-                                $id = $dets[0]->menu_sub_cat_id + 1;
-                            }else{
-                                $id = 1;  
-                            }
+                            // $dets = $this->manager_model->get_last_ids('menu_sub_cat_id','menu_subcategories');
+                            // if($dets){
+                            //     $id = $dets[0]->menu_sub_cat_id + 1;
+                            // }else{
+                            //     $id = 1;  
+                            // }
 
                             $ins_subcategories = array(
-                                'menu_sub_cat_id' => $id,
+                                // 'menu_sub_cat_id' => $id,
+                                'menu_sub_cat_id' => $row['menu_sub_cat_id'],
                                 'menu_sub_cat_name' => strtoupper($subcat_name),
                                 // 'category_id' => $cat_id,
                                 'reg_date'          => $now,
@@ -1807,7 +1818,8 @@ class Menu extends CI_Controller {
                         }
 
                         $uom_code = trim($row['uom']);
-                        $uom_exist = $this->site_model->get_tbl('uom',array('code'=>strtoupper($uom_code),'inactive'=>0));
+                        // $uom_exist = $this->site_model->get_tbl('uom',array('code'=>strtoupper($uom_code),'inactive'=>0));
+                        $uom_exist = $this->site_model->get_tbl('uom',array('id'=>$row['uom_id'],'inactive'=>0));
                         if(!$uom_exist && $uom_code  != ''){
                             // $dets = $this->manager_model->get_last_ids('menu_sub_cat_id','menu_subcategories');
                             // if($dets){
@@ -1817,7 +1829,7 @@ class Menu extends CI_Controller {
                             // }
 
                             $ins_uom = array(
-                                // 'menu_sub_cat_id' => $id,
+                                'id'   => $row['uom_id'],
                                 'code' => strtoupper($uom_code),
                                 'name' => strtoupper($uom_code),
                                 // 'reg_date'          => $now,
@@ -1840,58 +1852,23 @@ class Menu extends CI_Controller {
                     }
       
                 #################################################################################################################################                ### GET ALL CATEGORIES AND SUBCATEGORIES
-                    $result = $this->site_model->get_tbl('menu_categories',array('inactive'=>0));
-                    $categories = array();
-                    foreach ($result as $res) {
-                        $categories[strtolower($res->menu_cat_name)] = $res;
-                    }
-                    $result = $this->site_model->get_tbl('menu_subcategories',array('inactive'=>0));
-                    $subcategories = array();
-                    foreach ($result as $res) {
-                        $subcategories[strtolower($res->menu_sub_cat_name)] = $res;
-                    }
 
                     $result = $this->site_model->get_tbl('brands',array('inactive'=>0));
                     $brands = array();
                     foreach ($result as $res) {
                         $brands[strtolower($res->brand_code)] = $res;
-                    }
-
-                    $result = $this->site_model->get_tbl('uom',array('inactive'=>0));
-                    $uoms = array();
-                    foreach ($result as $res) {
-                        $uoms[strtolower($res->code)] = $res;
-                    }
+                    }                    
                 #################################################################################################################################
                 ### INSERT MENUS
                     $menus = array();    
                     // $last_menu_id = $this->menu_model->get_last_menu_id();
                     foreach ($rows as $ctr => $row) {
-                        if(!isset($menus[$row['short_name']])){
-                            $cat_id = 0;
-                            if(isset($categories[strtolower($row['category'])])){
-                                $cat = $categories[strtolower($row['category'])];
-                                $cat_id = $cat->menu_cat_id;
-                            }
-                            $subcat_id = 0; 
-                            if(isset($subcategories[strtolower($row['subcategory'])])){
-                                $subcat = $subcategories[strtolower($row['subcategory'])];
-                                $subcat_id = $subcat->menu_sub_cat_id;
-                            }
-
+                        if(!isset($menus[$row['short_name']])){                           
                             $brand_id = 1;
                             if(isset($brands[strtolower($row['brand'])])){
                                 $brand = $brands[strtolower($row['brand'])];
                                 $brand_id = $brand->id;
                             }
-
-                            $uom_id = 0;
-                            if(isset($uoms[strtolower($row['uom'])])){
-                                $uom = $uoms[strtolower($row['uom'])];
-                                $uom_id = $uom->id;
-                            }
-
-                            // $last_menu_id++;
                             
                             $menus[] = array(
                                 'menu_id'   => $row['menu_id'],
@@ -1899,15 +1876,15 @@ class Menu extends CI_Controller {
                                 'menu_barcode' => $row['menu_barcode'],
                                 'menu_name' => $row['short_name'],
                                 'menu_short_desc' => $row['full_name'],
-                                'menu_cat_id' => $cat_id,
-                                'menu_sub_cat_id' => $subcat_id,
+                                'menu_cat_id' => $row['menu_cat_id'],
+                                'menu_sub_cat_id' => $row['menu_sub_cat_id'],
                                 'menu_sched_id' => $dflt_schedule,
                                 'cost' => $row['price'],
                                 'reg_date' => $now,
                                 'brand'=>$brand_id,
                                 'miaa_cat'=>$row['miaa_cat'],
                                 'no_tax'=>$row['no_tax'],
-                                'uom_id'=>$uom_id
+                                'uom_id'=>$row['uom_id']
                             ); 
                                                    
                         }
