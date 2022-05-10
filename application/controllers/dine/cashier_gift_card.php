@@ -9912,7 +9912,7 @@ class Cashier_Gift_Card extends Reads {
                     // }            
                 }
             }else if(PRINT_VERSION && PRINT_VERSION == 'V3'){
-                $js_rcp = $this->html_print($print_str,true);
+                $js_rcp = $this->html_print($print_str);
 
                 $js_rcps[] = array('printer'=>BILLING_PRINTER,'value'=>$js_rcp);
 

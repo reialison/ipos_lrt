@@ -7393,7 +7393,7 @@ $(document).ready(function(){
 		});
 		$('#print-btn').click(function(event){
 			var sales_id = $(this).attr('ref');
-			$.post(baseUrl+'cashier/print_sales_receipt_justin/'+sales_id,'',function(data)
+			$.post(baseUrl+'cashier_gift_card/print_sales_receipt_justin/'+sales_id,'',function(data)
 			{
 				if(data.js_rcps){
 					$.ajaxSetup({async: false});										
@@ -7758,7 +7758,7 @@ $(document).ready(function(){
 				// }
 				// else{
 					// $.rProgressBar();				
-					window.open(baseUrl+'reporting/print_pdf_sales/'+id+'/0', "popupWindow", "width=600,height=600,scrollbars=yes");
+					window.open(baseUrl+'reporting/print_pdf_gc/'+id+'/0', "popupWindow", "width=600,height=600,scrollbars=yes");
 					btn.goLoad({load:false});
 					return false;
 				// }
