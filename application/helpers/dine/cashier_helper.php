@@ -352,7 +352,7 @@ function indexPage($needEod=false,$set,$today=null){
 								$CI->make->eDivCol();
 							$CI->make->eDivRow();
 						$CI->make->eDiv();
-						$CI->make->sDiv(array('class'=>'change-to-div center-loads-div'));
+						$CI->make->sDiv(array('class'=>'change-to-div center-loads-div','style'=>'overflow:auto'));
 							$CI->make->sDivRow();
 								$CI->make->H(3,'Change Order To:',array('class'=>'text-center','style'=>'margin-top:10px;margin-bottom:15px;'));
 								// foreach (unserialize(SALE_TYPES) as $st) {

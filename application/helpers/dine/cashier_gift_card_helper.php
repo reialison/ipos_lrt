@@ -533,7 +533,7 @@ function counterPage($type=null,$time=null,$loaded=null,$order=array(),$typeCN=a
 				#LEFT
 				$CI->make->sDivCol(1,'left',0,array('class'=>'counter-left gc-left-panel'));
 					// $CI->make->button("",array('id'=>'','class'=>'btn-block counter-btn-red double'));
-					$CI->make->button(fa('fa-magnet fa-lg fa-fw').'<br>Take Out',array('id'=>'take-all-btn','class'=>'btn-block counter-btn-red double media-btn-height'));
+					// $CI->make->button(fa('fa-magnet fa-lg fa-fw').'<br>Take Out',array('id'=>'take-all-btn','class'=>'btn-block counter-btn-red double media-btn-height'));
 					if(ORDERING_STATION){
 						if($type == 'retail'){
 							// echo "<pre>",print_r($type),"</pre>";die();
@@ -589,8 +589,8 @@ function counterPage($type=null,$time=null,$loaded=null,$order=array(),$typeCN=a
 							else if(SERVER_NO_SETUP && isset($typeCN[0]['type']) && $typeCN[0]['type'] == 'counter' || SERVER_NO_SETUP && isset($typeCN[0]['type']) && $typeCN[0]['type'] == 'takeout'){
 								$CI->make->button(fa('fa-ticket fa-lg fa-fw').'<br> Serve No.',array('id'=>'serve-no-btn','class'=>'btn-block counter-btn-red double media-btn-height'));
 							}
-							else	
-								$CI->make->button(fa('fa-user fa-lg fa-fw').'<br> Food Server',array('id'=>'waiter-btn','class'=>'btn-block counter-btn-red double media-btn-height'));
+							// else	
+							// 	$CI->make->button(fa('fa-user fa-lg fa-fw').'<br> Food Server',array('id'=>'waiter-btn','class'=>'btn-block counter-btn-red double media-btn-height'));
 						}
 							
 						$CI->make->button(fa('fa-tags fa-lg fa-fw').'<br> Quantity',array('id'=>'qty-btn','class'=>'btn-block counter-btn-red double media-btn-height'));
@@ -602,7 +602,7 @@ function counterPage($type=null,$time=null,$loaded=null,$order=array(),$typeCN=a
 						// $CI->make->button(fa('fa-certificate fa-lg fa-fw').'<br> Add Line Discount',array('id'=>'add-discount-line-btn','class'=>'btn-block counter-btn-red double'));
 						// $CI->make->button(fa('fa-dot-circle-o fa-lg fa-fw').'<br>Zero-Rated',array('id'=>'zero-rated-btn','class'=>'btn-block counter-btn-red double'));
 						// $CI->make->button(fa('fa-dot-circle-o fa-lg fa-fw').'<br>Inv Check',array('id'=>'inv-check-btn','class'=>'btn-block counter-btn-red double'));
-						$CI->make->button(fa('fa-tag fa-lg fa-fw').'<br> Add Charges',array('id'=>'charges-btn','class'=>'btn-block counter-btn-red double media-btn-height'));
+						// $CI->make->button(fa('fa-tag fa-lg fa-fw').'<br> Add Charges',array('id'=>'charges-btn','class'=>'btn-block counter-btn-red double media-btn-height'));
 						$CI->make->button(fa('fa-asterisk fa-lg fa-fw').'<br> Free',array('id'=>'free-btn','class'=>'btn-block counter-btn-red double media-btn-height'));
 						$CI->make->button(fa('fa-text-width fa-lg fa-fw').'<br> Add Remarks',array('id'=>'remarks-btn','class'=>'btn-block counter-btn-red double media-btn-height'));
 						$CI->make->button(fa('fa-times fa-lg fa-fw').'<br>REMOVE',array('id'=>'remove-btn','class'=>'btn-block counter-btn-red double media-btn-height '.$loaded));
