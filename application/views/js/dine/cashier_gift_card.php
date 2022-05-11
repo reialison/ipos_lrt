@@ -5990,7 +5990,7 @@ $(document).ready(function(){
 			var discount = data.discount;
 			var local_tax = data.local_tax;
 			$("#total-txt").number(total,2);
-			$("#discount-txt").number(discount,2);
+			$("#discount-amount-txt").number(discount,2);
 			if($("#local-tax-txt").exists()){
 				$("#local-tax-txt").number(local_tax,2);
 			}
