@@ -913,9 +913,9 @@ class Cashier_Gift_Card_model extends CI_Model{
 		$this->db->insert('trans_gc_payments',$items);
 		return $this->db->insert_id();
 	}
-	public function delete_trans_sales_payments($payment_id){
-		$this->db->where('trans_sales_payments.payment_id', $payment_id);
-		$this->db->delete('trans_sales_payments');
+	public function delete_trans_gc_payments($payment_id){
+		$this->db->where('trans_gc_payments.gc_payment_id', $payment_id);
+		$this->db->delete('trans_gc_payments');
 	}
 	public function get_trans_gc_tax($gc_tax_id=null,$args=array()){
 		$this->db->select('trans_gc_tax.*');

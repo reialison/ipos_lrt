@@ -516,7 +516,11 @@ $(document).ready(function(){
 
 
 		$('#gift-card-btn').click(function(){
-			window.location = baseUrl+'cashier_gift_card/counter/giftcheque';
+			// window.location = baseUrl+'cashier_gift_card/counter/giftcheque';
+			formData = 'txt=giftcheque';
+   			$.post(baseUrl+'cashier/encrypt_data',formData,function(data){
+				window.location = baseUrl+'cashier_gift_card/counter/'+data;
+   			});
 			return false;
 		});
 		
@@ -10713,7 +10717,7 @@ $(document).ready(function(){
 		}
 		function deletePayment(pay_id,sales_id){
 			$('#void-payment-btn-'+pay_id).click(function(){
-				$.post(baseUrl+'cashier/delete_payment/'+pay_id+'/'+sales_id,function(data){
+				$.post(baseUrl+'cashier_gift_card/delete_payment/'+pay_id+'/'+sales_id,function(data){
 					console.log(data);
 					if(data.error == 'paid'){
   						rMsg('Error! Transaction already paid.','error');
@@ -10732,7 +10736,7 @@ $(document).ready(function(){
 		}
 		function loadTransactions(){
 			var id = $('#settle').attr('sales');
-			$.post(baseUrl+'cashier/settle_transactions/'+id,function(data){
+			$.post(baseUrl+'cashier_gift_card/settle_transactions/'+id,function(data){
 				$('.transactions-payment-div .body').html(data.code);
 				$('.transactions-payment-div .body').perfectScrollbar({suppressScrollX: true});
 				$.each(data.ids,function(key,pay_id){

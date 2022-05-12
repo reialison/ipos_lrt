@@ -1018,6 +1018,11 @@ class Cashier_Gift_Card extends Reads {
             $this->load->model('site/site_model');
             $this->load->model('dine/cashier_gift_card_model');
             $this->load->helper('dine/cashier_gift_card_helper');
+
+            $to_dec = str_replace('~~','%',$type);
+            $txts = rawurldecode($to_dec);
+            $type = $this->encrypt->decode($txts);
+            
             $data = $this->syter->spawn(null);
             $loaded = null;
             $order = array();
@@ -7847,7 +7852,7 @@ class Cashier_Gift_Card extends Reads {
                 //     $this->sync_model->delete_trans_sales_payments($payment_id); // delete in main before ot deletes on dine
                 //     $this->sync_model->update_trans_sales($sales_id);
                 // }                    
-                $this->cashier_gift_card_model->delete_trans_sales_payments($payment_id);
+                $this->cashier_gift_card_model->delete_trans_gc_payments($payment_id);
                 $payment = $this->get_order_payments(false,$sales_id);
                 $error = "";
                 $balance = 0;
@@ -7855,7 +7860,7 @@ class Cashier_Gift_Card extends Reads {
                 foreach ($payment as $payment_id => $pay) {
                     $total_paid += $pay['amount'];
                 }
-                $this->cashier_gift_card_model->update_trans_sales(array('total_paid'=>$total_paid),$sales_id);
+                $this->cashier_gift_card_model->update_trans_gc(array('total_paid'=>$total_paid),$sales_id);
                 echo json_encode(array('error'=>$error,'balance'=>$order['amount'] - $total_paid));
             }
         }
