@@ -73,8 +73,8 @@ class Miaa extends Reads {
 		$year = date('Y',strtotime($date));
         // $file_path .= $year."/";
         $eod = $this->old_grand_net_total($date);
-		$sales_file = $file_path."S".substr($mall['tenant_code'],0,4).TERMINAL_NUMBER.$ctr.".".$mon[date('m',strtotime($date))].date('d',strtotime($date));
-		$hourly_file = $file_path."H".substr($mall['tenant_code'],0,4).TERMINAL_NUMBER.$ctr.".".$mon[date('m',strtotime($date))].date('d',strtotime($date));
+		$sales_file = $file_path."S".substr($mall['tenant_code'],0,4).TERMINAL_NUMBER.$eod['ctr'].".".$mon[date('m',strtotime($date))].date('d',strtotime($date));
+        $hourly_file = $file_path."H".substr($mall['tenant_code'],0,4).TERMINAL_NUMBER.$eod['ctr'].".".$mon[date('m',strtotime($date))].date('d',strtotime($date));
 		// $disc_file = $file_path."D".substr($mall['tenant_code'],0,4).TERMINAL_NUMBER.$ctr.".".$mon[date('m',strtotime($date))].date('d',strtotime($date));
 		$disc= "";
 		if(file_exists($sales_file)){
