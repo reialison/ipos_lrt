@@ -7939,7 +7939,7 @@ class Cashier extends Reads {
                 $type = $counter['type'];
                 #save sa trans_sales
                 $table = null;
-                $guest = 0;
+                $guest = 1;
                 
                 $customer = null;
                 if(isset($trans_type_cart[0]['table'])){

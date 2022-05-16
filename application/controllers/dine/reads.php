@@ -7720,6 +7720,7 @@ class Reads extends Prints {
 
             $mon = array('01'=>'1','02'=>'2','03'=>'3','04'=>'4','05'=>'5','06'=>'6','07'=>'7','08'=>'8','09'=>'9','10'=>'A','11'=>'B','12'=>'C');
 
+            $gts = $this->old_grand_net_total($zread['from']);
 
             if(isset($zread['read_date']) && $zread['read_date'] != null){
                 $year = date('Y',strtotime($zread['read_date']));
@@ -7823,7 +7824,8 @@ class Reads extends Prints {
                             $non_vat = 0;
                             $sales_hour = "";
                             $guest = 0;
-                            foreach ($trans['sales']['settled']['orders'] as $val) {
+
+                            foreach ($trans['all_orders'] as $val) {
                                 if($val->type_id == SALES_TRANS && $val->trans_ref != "" && $val->inactive == 0){
                                     $time = DateTime::createFromFormat('Y-m-d H:i:s',$val->datetime);
                                     $start = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['start']);
@@ -7867,6 +7869,24 @@ class Reads extends Prints {
                                         }
                                         $trans_cnt += 1;                                           
                                     }
+                                }else if($val->type_id == SALES_TRANS && $val->trans_ref != "" && $val->inactive == 1){
+                                    //voided
+                                    $time = DateTime::createFromFormat('Y-m-d H:i:s',$val->datetime);
+                                    $start = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['start']);
+                                    $end = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['end']);
+                                    if($time >= $start && $time <= $end){
+                                        $guest += $val->guest;
+                                        $trans_cnt += 1;
+                                    }
+                                }else if($val->type_id == 11){
+                                    // void trans
+                                    $time = DateTime::createFromFormat('Y-m-d H:i:s',$val->datetime);
+                                    $start = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['start']);
+                                    $end = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['end']);
+                                    if($time >= $start && $time <= $end){
+                                        // $guest += $val->guest;
+                                        $trans_cnt += 1;
+                                    }
                                 }    
                             }
                             foreach ($trans['sales']['void']['orders'] as $val) {
@@ -7906,7 +7926,7 @@ class Reads extends Prints {
                         }
                         // echo 'sss'.$sales_date.'sss'; die();
                         $str .= "01".$tenant_code.$dlmtr;
-                        $str .= "02".TERMINAL_NUMBER.$dlmtr;
+                        $str .= "0200".TERMINAL_NUMBER.$dlmtr;
                         $str .= "03".date('mdY',strtotime($sales_date)).$dlmtr;
                         $total_net = 0;
                         $total_trans_cnt = 0;
@@ -7920,7 +7940,7 @@ class Reads extends Prints {
                             $total_trans_cnt += $row['trans_cnt'];
                             $total_guest += $row['guest'];
                         }
-                        $str .= "08".numNoDot($total_net).$dlmtr;
+                        $str .= "08".numNoDot(numInt($total_net)).$dlmtr;
                         $str .= "09".$total_trans_cnt.$dlmtr;
                         $str .= "10".$total_guest;
                     }else{
@@ -7950,7 +7970,7 @@ class Reads extends Prints {
                         }
 
                         $str .= "01".$tenant_code.$dlmtr;
-                        $str .= "02".TERMINAL_NUMBER.$dlmtr;
+                        $str .= "0200".TERMINAL_NUMBER.$dlmtr;
                         $str .= "03".date('mdY',strtotime($sales_date)).$dlmtr;
                         $total_net = 0;
                         $total_trans_cnt = 0;
@@ -7964,11 +7984,12 @@ class Reads extends Prints {
                             $total_trans_cnt += $row['trans_cnt'];
                             $total_guest += $row['guest'];
                         }
-                        $str .= "08".numNoDot($total_net).$dlmtr;
+                        $str .= "08".numNoDot(numInt($total_net)).$dlmtr;
                         $str .= "09".$total_trans_cnt.$dlmtr;
                         $str .= "10".$total_guest;
                     }
-                    $hrlyfile = "H".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).$eod_ctr.".".$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
+                    // $hrlyfile = "H".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).$eod_ctr.".".$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
+                    $hrlyfile = "H".substr($tenant_code,0,4).TERMINAL_NUMBER.$gts['ctr'].".".$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
                     $this->write_file($file_path.$hrlyfile,$str);
                 ###################################################################################################################################
                 ### DISCOUNT FILE
@@ -8056,7 +8077,7 @@ class Reads extends Prints {
                     // $tgross = $total_vat + $total_senior + $total_pwd + $total_other_disc;
                     $tgross = $total_net + $total_senior + $total_pwd + $total_other_disc;
                     $str = "01".$tenant_code.$dlmtr;
-                    $str .= "02".TERMINAL_NUMBER.$dlmtr;
+                    $str .= "0200".TERMINAL_NUMBER.$dlmtr;
                     $str .= "03".date('mdY',strtotime($zread['read_date'])).$dlmtr;
                     $str .= "04".numNoDot(numInt($old_gt)).$dlmtr;
                     $str .= "05".numNoDot(numInt($old_gt+$total_net)).$dlmtr;
@@ -8078,8 +8099,9 @@ class Reads extends Prints {
                     $str .= "21".$eod['ctr'].$dlmtr;
                     $str .= "22".$total_trans_cnt.$dlmtr;
                     $str .= "23".$sales_type.$dlmtr;
-                    $str .= "24".numNoDot($total_net);
-                    $dailyfile = "S".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).$eod_ctr.".".$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
+                    $str .= "24".numNoDot(numInt($total_net));
+                    $dailyfile = "S".substr($tenant_code,0,4).TERMINAL_NUMBER.$gts['ctr'].".".$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
+                    // $dailyfile = "S".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).$eod_ctr.".".$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
                     $this->write_file($file_path.$dailyfile,$str);
                 ###################################################################################################################################
                 // update for main
@@ -8104,7 +8126,8 @@ class Reads extends Prints {
                 else{
                     site_alert("MIAA File successfully created.","success");
 
-                    $file_txt_pt = "L".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).'.'.$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
+                    $file_txt_pt = "L".substr($tenant_code,0,4).TERMINAL_NUMBER.'.'.$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
+                    // $file_txt_pt = "L".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).'.'.$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
                     $text_pt = $file_path."/".$file_txt_pt;
 
                     if (file_exists($text_pt)) {
@@ -8121,7 +8144,7 @@ class Reads extends Prints {
                         $trans_date2 = date('m/d/Y',strtotime($zread['read_date']));
                         $time = $this->site_model->get_db_now();
                         $trans_time = date('H:i:s',strtotime($time));
-                        $last_data = commar($last_data,array($tenant_code,TERMINAL_NUMBER,$trans_date2,$trans_time,'00000000','00'));
+                        $last_data = commar($last_data,array($tenant_code,'00'.TERMINAL_NUMBER,$trans_date2,$trans_time,'00000000','00'));
                         // 7
                         $last_data = commar($last_data,0);
                         // 8
@@ -8199,6 +8222,7 @@ class Reads extends Prints {
 
             $mon = array('01'=>'1','02'=>'2','03'=>'3','04'=>'4','05'=>'5','06'=>'6','07'=>'7','08'=>'8','09'=>'9','10'=>'A','11'=>'B','12'=>'C');
 
+            $gts = $this->old_grand_net_total($zread['from']);
             // echo $zread['read_date']; die();
 
             //if(isset($zread['read_date']) && $zread['read_date'] != null){
@@ -8304,7 +8328,11 @@ class Reads extends Prints {
                             $non_vat = 0;
                             $sales_hour = "";
                             $guest = 0;
-                            foreach ($trans['sales']['settled']['orders'] as $val) {
+
+                            // echo '<pre>',print_r($trans['all_orders']),'</pre>'; die();
+
+                            // foreach ($trans['sales']['settled']['orders'] as $val) {
+                            foreach ($trans['all_orders'] as $val) {
                                 if($val->type_id == SALES_TRANS && $val->trans_ref != "" && $val->inactive == 0){
                                     $time = DateTime::createFromFormat('Y-m-d H:i:s',$val->datetime);
                                     $start = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['start']);
@@ -8348,8 +8376,27 @@ class Reads extends Prints {
                                         }
                                         $trans_cnt += 1;                                           
                                     }
+                                }else if($val->type_id == SALES_TRANS && $val->trans_ref != "" && $val->inactive == 1){
+                                    //voided
+                                    $time = DateTime::createFromFormat('Y-m-d H:i:s',$val->datetime);
+                                    $start = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['start']);
+                                    $end = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['end']);
+                                    if($time >= $start && $time <= $end){
+                                        $guest += $val->guest;
+                                        $trans_cnt += 1;
+                                    }
+                                }else if($val->type_id == 11){
+                                    // void trans
+                                    $time = DateTime::createFromFormat('Y-m-d H:i:s',$val->datetime);
+                                    $start = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['start']);
+                                    $end = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['end']);
+                                    if($time >= $start && $time <= $end){
+                                        // $guest += $val->guest;
+                                        $trans_cnt += 1;
+                                    }
                                 }    
                             }
+
                             foreach ($trans['sales']['void']['orders'] as $val) {
                                 $time = DateTime::createFromFormat('Y-m-d H:i:s',$val->datetime);
                                 $start = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['start']);
@@ -8387,7 +8434,7 @@ class Reads extends Prints {
                         }
                         // echo 'sss'.$sales_date.'sss'; die();
                         $str .= "01".$tenant_code.$dlmtr;
-                        $str .= "02".TERMINAL_NUMBER.$dlmtr;
+                        $str .= "0200".TERMINAL_NUMBER.$dlmtr;
                         $str .= "03".date('mdY',strtotime($sales_date)).$dlmtr;
                         $total_net = 0;
                         $total_trans_cnt = 0;
@@ -8401,7 +8448,7 @@ class Reads extends Prints {
                             $total_trans_cnt += $row['trans_cnt'];
                             $total_guest += $row['guest'];
                         }
-                        $str .= "08".numNoDot($total_net).$dlmtr;
+                        $str .= "08".numNoDot(numInt($total_net)).$dlmtr;
                         $str .= "09".$total_trans_cnt.$dlmtr;
                         $str .= "10".$total_guest;
                     }else{
@@ -8431,7 +8478,7 @@ class Reads extends Prints {
                         }
                         //zread
                         $str .= "01".$tenant_code.$dlmtr;
-                        $str .= "02".TERMINAL_NUMBER.$dlmtr;
+                        $str .= "0200".TERMINAL_NUMBER.$dlmtr;
                         $str .= "03".date('mdY',strtotime($sales_date)).$dlmtr;
                         $total_net = 0;
                         $total_trans_cnt = 0;
@@ -8445,11 +8492,12 @@ class Reads extends Prints {
                             $total_trans_cnt += $row['trans_cnt'];
                             $total_guest += $row['guest'];
                         }
-                        $str .= "08".numNoDot($total_net).$dlmtr;
+                        $str .= "08".numNoDot(numInt($total_net)).$dlmtr;
                         $str .= "09".$total_trans_cnt.$dlmtr;
                         $str .= "10".$total_guest;
                     }
-                    $hrlyfile = "H".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).$eod_ctr.".".$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
+                    $hrlyfile = "H".substr($tenant_code,0,4).TERMINAL_NUMBER.$gts['ctr'].".".$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
+                    // $hrlyfile = "H".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).$eod_ctr.".".$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
                     $this->write_file($file_path.$hrlyfile,$str);
                 ###################################################################################################################################
                 ### DISCOUNT FILE
@@ -8537,7 +8585,7 @@ class Reads extends Prints {
                     // $tgross = $total_vat + $total_senior + $total_pwd + $total_other_disc;
                     $tgross = $total_net + $total_senior + $total_pwd + $total_other_disc;
                     $str = "01".$tenant_code.$dlmtr;
-                    $str .= "02".TERMINAL_NUMBER.$dlmtr;
+                    $str .= "0200".TERMINAL_NUMBER.$dlmtr;
                     $str .= "03".date('mdY',strtotime($sel_date)).$dlmtr;
                     $str .= "04".numNoDot(numInt($old_gt)).$dlmtr;
                     $str .= "05".numNoDot(numInt($old_gt+$total_net)).$dlmtr;
@@ -8559,8 +8607,9 @@ class Reads extends Prints {
                     $str .= "21".$eod['ctr'].$dlmtr;
                     $str .= "22".$total_trans_cnt.$dlmtr;
                     $str .= "23".$sales_type.$dlmtr;
-                    $str .= "24".numNoDot($total_net);
-                    $dailyfile = "S".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).$eod_ctr.".".$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
+                    $str .= "24".numNoDot(numInt($total_net));
+                    $dailyfile = "S".substr($tenant_code,0,4).TERMINAL_NUMBER.$gts['ctr'].".".$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
+                    // $dailyfile = "S".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).$eod_ctr.".".$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
                     $this->write_file($file_path.$dailyfile,$str);
                 ###################################################################################################################################
                 // update for main
@@ -8585,7 +8634,8 @@ class Reads extends Prints {
                 else{
                     site_alert("MIAA File successfully created.","success");
 
-                    $file_txt_pt = "L".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).'.'.$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
+                    $file_txt_pt = "L".substr($tenant_code,0,4).TERMINAL_NUMBER.'.'.$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
+                    // $file_txt_pt = "L".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).'.'.$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
                     $text_pt = $file_path."/".$file_txt_pt;
 
                     if (file_exists($text_pt)) {
@@ -8602,7 +8652,7 @@ class Reads extends Prints {
                         $trans_date2 = date('m/d/Y',strtotime($zread['read_date']));
                         $time = $this->site_model->get_db_now();
                         $trans_time = date('H:i:s',strtotime($time));
-                        $last_data = commar($last_data,array($tenant_code,TERMINAL_NUMBER,$trans_date2,$trans_time,'00000000','00'));
+                        $last_data = commar($last_data,array($tenant_code,'00'.TERMINAL_NUMBER,$trans_date2,$trans_time,'00000000','00'));
                         // 7
                         $last_data = commar($last_data,0);
                         // 8
@@ -8678,7 +8728,8 @@ class Reads extends Prints {
             $sales_type = $mgm->sales_type;
             $d = date('d',strtotime($read_date));
             $mon = array('01'=>'1','02'=>'2','03'=>'3','04'=>'4','05'=>'5','06'=>'6','07'=>'7','08'=>'8','09'=>'9','10'=>'A','11'=>'B','12'=>'C');
-            $file_txt = "L".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).'.'.$mon[date('m',strtotime($read_date))].date('d',strtotime($read_date));
+            // $file_txt = "L".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).'.'.$mon[date('m',strtotime($read_date))].date('d',strtotime($read_date));
+            $file_txt = "L".substr($tenant_code,0,4).TERMINAL_NUMBER.'.'.$mon[date('m',strtotime($read_date))].date('d',strtotime($read_date));
 
             $year = date('Y',strtotime($read_date));
             $month = date('M',strtotime($read_date));
@@ -8991,7 +9042,8 @@ class Reads extends Prints {
                                 }else{
                                     $trans_time = date('H:i:s',strtotime($val->datetime) + $mctr - 1);
                                 }
-                                $print_str = commar($print_str,array($tenant_code,TERMINAL_NUMBER,$trans_date,$trans_time,$val->trans_ref,$cat_type));
+                                $ref = $val->sales_id;
+                                $print_str = commar($print_str,array($tenant_code,'00'.TERMINAL_NUMBER,$trans_date,$trans_time,$ref,$cat_type));
                                 // 7
                                 $print_str = commar($print_str,$mn->qty);
                                 // 8
@@ -9200,7 +9252,9 @@ class Reads extends Prints {
                             }else{
                                 $trans_time = date('H:i:s',strtotime($void_det[0]->update_date) + $mctr - 1);
                             }
-                            $print_str = commar($print_str,array($tenant_code,TERMINAL_NUMBER,$trans_date,$trans_time,$invoice,$cat_type));
+                            // $ref = str_replace("V","",$invoice);
+                            $ref = $val->sales_id;
+                            $print_str = commar($print_str,array($tenant_code,'00'.TERMINAL_NUMBER,$trans_date,$trans_time,$ref,$cat_type));
                             // 7
                             $print_str = commar($print_str,$mn->qty);
                             // 8
@@ -9325,7 +9379,8 @@ class Reads extends Prints {
             $sales_type = $mgm->sales_type;
             $d = date('d',strtotime($read_date));
             $mon = array('01'=>'1','02'=>'2','03'=>'3','04'=>'4','05'=>'5','06'=>'6','07'=>'7','08'=>'8','09'=>'9','10'=>'A','11'=>'B','12'=>'C');
-            $file_txt = "L".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).'.'.$mon[date('m',strtotime($read_date))].date('d',strtotime($read_date));
+            // $file_txt = "L".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).'.'.$mon[date('m',strtotime($read_date))].date('d',strtotime($read_date));
+            $file_txt = "L".substr($tenant_code,0,4).TERMINAL_NUMBER.'.'.$mon[date('m',strtotime($read_date))].date('d',strtotime($read_date));
 
             $year = date('Y',strtotime($read_date));
             $month = date('M',strtotime($read_date));
@@ -9643,7 +9698,8 @@ class Reads extends Prints {
                                     }else{
                                         $trans_time = date('H:i:s',strtotime($val->datetime) + $mctr - 1);
                                     }
-                                    $print_str = commar($print_str,array($tenant_code,TERMINAL_NUMBER,$trans_date,$trans_time,$val->trans_ref,$cat_type));
+                                    $ref = $val->sales_id;
+                                    $print_str = commar($print_str,array($tenant_code,'00'.TERMINAL_NUMBER,$trans_date,$trans_time,$ref,$cat_type));
                                     // 7
                                     $print_str = commar($print_str,$mn->qty);
                                     // 8
@@ -9852,7 +9908,9 @@ class Reads extends Prints {
                                 }else{
                                     $trans_time = date('H:i:s',strtotime($val->update_date) + $mctr - 1);
                                 }
-                                $print_str = commar($print_str,array($tenant_code,TERMINAL_NUMBER,$trans_date,$trans_time,$val->trans_ref,$cat_type));
+                                // $ref = str_replace("V","",$val->trans_ref);
+                                $ref = $val->sales_id;
+                                $print_str = commar($print_str,array($tenant_code,'00'.TERMINAL_NUMBER,$trans_date,$trans_time,$ref,$cat_type));
                                 // 7
                                 $print_str = commar($print_str,$mn->qty);
                                 // 8
@@ -9926,7 +9984,7 @@ class Reads extends Prints {
             $trans_date2 = date('m/d/Y',strtotime($read_date));
             $time = $this->site_model->get_db_now();
             $trans_time = date('H:i:s',strtotime($time));
-            $last_data = commar($last_data,array($tenant_code,TERMINAL_NUMBER,$trans_date2,$trans_time,'00000000','00'));
+            $last_data = commar($last_data,array($tenant_code,'00'.TERMINAL_NUMBER,$trans_date2,$trans_time,'00000000','00'));
             // 7
             $last_data = commar($last_data,0);
             // 8
