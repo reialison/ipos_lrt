@@ -382,7 +382,7 @@ class Api extends CI_Controller{
         // $machine_id=substr($mycom,($pmac+253),17); // Get Physical Address
 
         $lines = explode("\n", $mycom);
-        $find = "Ethernet";
+        $find = "Ethernet:";
         $is_eth = false;
 
         $ethernet = '';
