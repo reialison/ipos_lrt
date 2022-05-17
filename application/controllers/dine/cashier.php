@@ -6340,6 +6340,8 @@ class Cashier extends Reads {
                 }
             }
 
+            // var_dump($per_item_disc); die();
+
             $taxable_amount1 = $gross;
             $total_disc = 0;
             if($per_item_disc){
@@ -6352,7 +6354,14 @@ class Cashier extends Reads {
                 if(count($item_discount_cart) > 0){
 
                     foreach($item_discount_cart as $id => $val){
-                        $total_disc += $val['amount'];
+                        $lvat = 0;
+                        if($val['no_tax'] == 1){
+                            $drate = $val['disc_rate']/100;
+                            $for_lv = $val['amount'] / $drate;
+
+                            $lvat = $for_lv * 0.12;
+                        }
+                        $total_disc += $val['amount'] + $lvat;
                     }
 
 
@@ -6539,7 +6548,8 @@ class Cashier extends Reads {
             // echo $discount."<br>";
             $total -= $total_disc + $less_vat;
             $total_for_charge = $total - $less_vat;
-            // echo $total;    
+            // echo $total; 
+            // die();   
             $trans_charge_cart = sess('trans_charge_cart');
             if(is_array($charge_cart)){
                 $trans_charge_cart = $charge_cart;
@@ -6558,112 +6568,112 @@ class Cashier extends Reads {
             #
             #GET VATABLE AMOUNT (FOR SM)
             #
-                if(MALL_ENABLED && MALL == 'megamall'){
-                    $discountt = 0;
-                    $taxable_amount = 0;
-                    $not_taxable_amount = 0;
-                    $discss = array();
-                    $item_count = count($trans_cart);
-                    foreach ($trans_cart as $trans_id => $v) {
-                        if(isset($v['cost']))
-                            $cost = $v['cost'];
-                        if(isset($v['price']))
-                            $cost = $v['price'];
-                        ####################
-                        if(isset($v['modifiers'])){
-                            foreach ($v['modifiers'] as $trans_mod_id => $m) {
-                                if($trans_id == $m['line_id']){
-                                    $cost += $m['price'];
-                                }
-                            }
-                        }
-                        else{
-                            if(count($trans_mod_cart) > 0){
-                                foreach ($trans_mod_cart as $trans_mod_id => $m) {
-                                    if($trans_id == $m['trans_id']){
-                                        $cost += $m['cost'];
-                                    }
-                                }
-                            }
-                        }
-                        ####################
-                        foreach ($trans_disc_cart as $disc_id => $row) {
-                            $rate = $row['disc_rate'];
-                            switch ($row['disc_type']) {
-                                case "equal":
-                                        // $divi = $cost/$row['guest'];
-                                        // $discount = ($rate / 100) * $divi;
-                                        // $cost -= $discount;
+                // if(MALL_ENABLED && MALL == 'megamall'){
+                //     $discountt = 0;
+                //     $taxable_amount = 0;
+                //     $not_taxable_amount = 0;
+                //     $discss = array();
+                //     $item_count = count($trans_cart);
+                //     foreach ($trans_cart as $trans_id => $v) {
+                //         if(isset($v['cost']))
+                //             $cost = $v['cost'];
+                //         if(isset($v['price']))
+                //             $cost = $v['price'];
+                //         ####################
+                //         if(isset($v['modifiers'])){
+                //             foreach ($v['modifiers'] as $trans_mod_id => $m) {
+                //                 if($trans_id == $m['line_id']){
+                //                     $cost += $m['price'];
+                //                 }
+                //             }
+                //         }
+                //         else{
+                //             if(count($trans_mod_cart) > 0){
+                //                 foreach ($trans_mod_cart as $trans_mod_id => $m) {
+                //                     if($trans_id == $m['trans_id']){
+                //                         $cost += $m['cost'];
+                //                     }
+                //                 }
+                //             }
+                //         }
+                //         ####################
+                //         foreach ($trans_disc_cart as $disc_id => $row) {
+                //             $rate = $row['disc_rate'];
+                //             switch ($row['disc_type']) {
+                //                 case "equal":
+                //                         // $divi = $cost/$row['guest'];
+                //                         // $discount = ($rate / 100) * $divi;
+                //                         // $cost -= $discount;
 
-                                        $divi = $cost/$row['guest'];
-                                        $divi_less = $divi;
-                                        if($row['no_tax'] == 1){
-                                            $divi_less = ($divi / 1.12);
-                                        }
-                                        $no_persons = count($row['persons']);
-                                        foreach ($row['persons'] as $code => $per) {
-                                            $discss[] = array('type'=>$row['disc_code'],'amount'=>($rate / 100) * $divi_less);
-                                            $discountt += ($rate / 100) * $divi_less;
-                                        }
-                                        $tl = $divi * ( abs($row['guest'] - $no_persons) );
-                                        $tdl = ($divi_less * $no_persons) - $discountt;
-                                        $cost = $tl - $tdl;
-                                        // $cost = ($divi * $row['guest']) - $discount;
-                                        break;
-                                default:
-                                    if($row['fix'] == 0){
-                                        $no_citizens = count($row['persons']);
-                                        if($row['no_tax'] == 1)
-                                            $cost = ($cost / 1.12);                     
-                                        foreach ($row['persons'] as $code => $per) {
-                                            $discss[] = array('type'=>$row['disc_code'],'amount'=>($rate / 100) * $cost);
-                                            $discountt += ($rate / 100) * $cost;
-                                        }
-                                        $cost -= $discountt;
-                                    }
-                                    else{
-                                        $rate = $rate/$item_count;
-                                        $discss[] = array('type'=>$row['disc_code'],'amount'=>$rate);
-                                        $discountt = $rate; 
-                                        $cost -= $discountt;
+                //                         $divi = $cost/$row['guest'];
+                //                         $divi_less = $divi;
+                //                         if($row['no_tax'] == 1){
+                //                             $divi_less = ($divi / 1.12);
+                //                         }
+                //                         $no_persons = count($row['persons']);
+                //                         foreach ($row['persons'] as $code => $per) {
+                //                             $discss[] = array('type'=>$row['disc_code'],'amount'=>($rate / 100) * $divi_less);
+                //                             $discountt += ($rate / 100) * $divi_less;
+                //                         }
+                //                         $tl = $divi * ( abs($row['guest'] - $no_persons) );
+                //                         $tdl = ($divi_less * $no_persons) - $discountt;
+                //                         $cost = $tl - $tdl;
+                //                         // $cost = ($divi * $row['guest']) - $discount;
+                //                         break;
+                //                 default:
+                //                     if($row['fix'] == 0){
+                //                         $no_citizens = count($row['persons']);
+                //                         if($row['no_tax'] == 1)
+                //                             $cost = ($cost / 1.12);                     
+                //                         foreach ($row['persons'] as $code => $per) {
+                //                             $discss[] = array('type'=>$row['disc_code'],'amount'=>($rate / 100) * $cost);
+                //                             $discountt += ($rate / 100) * $cost;
+                //                         }
+                //                         $cost -= $discountt;
+                //                     }
+                //                     else{
+                //                         $rate = $rate/$item_count;
+                //                         $discss[] = array('type'=>$row['disc_code'],'amount'=>$rate);
+                //                         $discountt = $rate; 
+                //                         $cost -= $discountt;
 
-                                    }
-                                    // $discount = ($rate / 100) * $cost;
-                                    // $cost -= $discount;
-                            }
-                        }
+                //                     }
+                //                     // $discount = ($rate / 100) * $cost;
+                //                     // $cost -= $discount;
+                //             }
+                //         }
 
-                        if($v['no_tax'] == 0){
-                            $taxable_amount += $cost * $v['qty'];
-                        }
-                        else{
-                            $not_taxable_amount += $cost * $v['qty'];
-                        }
-                    }
-                    if($not_taxable_amount > 0){
-                        $has_no_tax_disc = false;
-                        foreach ($trans_disc_cart as $disc_id => $row) {
-                            if($row['no_tax'] == 1){
-                                $has_no_tax_disc = true;
-                                break;
-                            }    
-                        }    
-                        if($has_no_tax_disc){
-                            $amount_cmpt = $net_total;                       
-                        }
-                        else{
-                            $amount_cmpt = ($taxable_amount/1.12) + $not_taxable_amount;
-                        }
-                    }
-                    else{
-                        if($taxable_amount > 0){
-                            $amount_cmpt = ($taxable_amount/1.12);
-                        }
-                        else{
-                            $amount_cmpt = $net_total;                                    
-                        }
-                    }
-                }
+                //         if($v['no_tax'] == 0){
+                //             $taxable_amount += $cost * $v['qty'];
+                //         }
+                //         else{
+                //             $not_taxable_amount += $cost * $v['qty'];
+                //         }
+                //     }
+                //     if($not_taxable_amount > 0){
+                //         $has_no_tax_disc = false;
+                //         foreach ($trans_disc_cart as $disc_id => $row) {
+                //             if($row['no_tax'] == 1){
+                //                 $has_no_tax_disc = true;
+                //                 break;
+                //             }    
+                //         }    
+                //         if($has_no_tax_disc){
+                //             $amount_cmpt = $net_total;                       
+                //         }
+                //         else{
+                //             $amount_cmpt = ($taxable_amount/1.12) + $not_taxable_amount;
+                //         }
+                //     }
+                //     else{
+                //         if($taxable_amount > 0){
+                //             $amount_cmpt = ($taxable_amount/1.12);
+                //         }
+                //         else{
+                //             $amount_cmpt = $net_total;                                    
+                //         }
+                //     }
+                // }
             #
             # END GET VATABLE AMOUNT (FOR SM)
             # 
@@ -7670,19 +7680,19 @@ class Cashier extends Reads {
                                     $cost = $v['price'];
 
                                 // $cost = $v['cost'];
-                                $total = $v['qty'] * $cost;
+                                $total_perline = $v['qty'] * $cost;
 
                                 if(isset($item_discount_cart[$trans_id])){
                                     
                                     if($item_discount_cart[$trans_id]['disc_code'] == 'DIPLOMAT'){
-                                        $zero_rated += $total / 1.12;
-                                        $not_taxable_amount += $total / 1.12;
-                                        $taxable_amount -= $total;
+                                        $zero_rated += $total_perline / 1.12;
+                                        $not_taxable_amount += $total_perline / 1.12;
+                                        $taxable_amount -= $total_perline;
                                     }else{
                                         $no_tx =  $item_discount_cart[$trans_id]['no_tax'];
                                         if($no_tx == 1){
-                                            $not_taxable_amount += $total / 1.12;
-                                            $taxable_amount -= $total;
+                                            $not_taxable_amount += $total_perline / 1.12;
+                                            $taxable_amount -= $total_perline;
                                             // die('ss');
                                         }else{
                                             // $with_disc = $total - $item_discount[$trans_id]['amount'];
@@ -9098,25 +9108,15 @@ class Cashier extends Reads {
                     if($kitchen_printer != ""){                                    
                         $print_ord_no = $this->print_order_no($sales_id);
 
-                        $print_echo_qr = $this->print_os_qr($sales_id);
                         $print_echo = $this->print_os($sales_id);
 
                         if(PRINT_VERSION && PRINT_VERSION=='V3'){
                             foreach($print_echo['js_rcps'] as $i=>$pe){
                                 $js_rcps[] = array('printer'=>$pe['printer'],'value'=>$pe['value']);
                             }
-
-                            foreach($print_echo_qr['js_rcps'] as $i=>$pe){
-                                $js_rcps[] = array('printer'=>BILLING_PRINTER,'value'=>$pe['value']);
-                            }
                             
                             $js_rcps[] = array('printer'=>BILLING_PRINTER,'value'=>$print_ord_no['js_rcp']);
                         }
-                        // else{
-                        //     foreach($print_echo_qr['js_rcps'] as $i=>$pe){
-                        //         $js_rcps[] = array('printer'=>BILLING_PRINTER,'value'=>$pe['value']);
-                        //     }
-                        // }
                     }
                 }
 
@@ -10459,14 +10459,14 @@ class Cashier extends Reads {
                 if($add_reprinted){
                     if($order['printed'] >= 1){
                         $print_str .= $this->align_center('[REPRINTED]',PAPER_WIDTH," ")."\r\n";
-                        if($main_db){
+                        if(!$main_db){
                             $this->cashier_model->update_trans_sales(array('printed'=>$order['printed']+1),$order['sales_id']);
                             $log_id = $this->logs_model->add_logs('Sales Order',$log_user['id'],$log_user['full_name']." Reprinted Receipt on Sales Order #".$order['sales_id']." Reference #".$order['ref'],$order['sales_id']);
                         }
                         
                     }
                     else{
-                        if($main_db){
+                        if(!$main_db){
                             $this->cashier_model->update_trans_sales(array('printed'=>1,'billed'=>1),$order['sales_id']);
                          
                           
@@ -10477,7 +10477,7 @@ class Cashier extends Reads {
                     }
                 }
                 else{
-                    if($main_db){
+                    if(!$main_db){
                         $this->cashier_model->update_trans_sales(array('printed'=>1,'billed'=>1),$order['sales_id']);
                         if(!$return_print_str){
                              $log_id = $this->logs_model->add_logs('Sales Order',$log_user['id'],$log_user['full_name']." Printed Receipt on Sales Order #".$order['sales_id']." Reference #".$order['ref'],$order['sales_id']);
@@ -10486,7 +10486,7 @@ class Cashier extends Reads {
                 }
             }
             else{
-                if($main_db){
+                if(!$main_db){
                     $this->cashier_model->update_trans_sales(array('billed'=>1),$order['sales_id']);
                     $log_id =  $this->logs_model->add_logs('Sales Order',$log_user['id'],$log_user['full_name']." Printed Billing on Sales Order #".$order['sales_id'],$order['sales_id']);
                 }
@@ -30515,7 +30515,14 @@ class Cashier extends Reads {
                     //for save sa trans_sales_discounts pero per item
                     $trans_sales_disc_items = array();
                     foreach($item_discount as $id => $dc){
-                        $total_disc += $dc['amount'];
+                        $lvat = 0;
+                        if($dc['no_tax'] == 1){
+                            $drate = $dc['disc_rate']/100;
+                            $for_lv = $dc['amount'] / $drate;
+
+                            $lvat = $for_lv * 0.12;
+                        }
+                        $total_disc += $dc['amount'] + $lvat;
                         
 
                     }
@@ -31760,48 +31767,27 @@ class Cashier extends Reads {
     public function html_print($print_str='',$is_bill = false, $sales_id = ''){
         $js_rcp = '<div style="width:270px;"><pre>'.$print_str.'</pre></div>';
 
-        if($is_bill && $is_bill != 'osqr'){
-            $js_rcp .= $this->align_center('<div id="qr_code" style="display: block;
-                      margin-left: auto;
-                      margin-right: auto;
-                      margin-top: 5px;
-                      width: 40%;" qr_code_value="'.$sales_id.'"></div>',PAPER_WIDTH," ")."\r\n";
+        if($is_bill){
+            // $js_rcp .= $this->align_center('<div id="qr_code" style="display: block;
+            //           margin-left: auto;
+            //           margin-right: auto;
+            //           margin-top: 5px;
+            //           width: 40%;" qr_code_value="'.$sales_id.'"></div>',PAPER_WIDTH," ")."\r\n";
             
-            $js_rcp .= '<script src="'. base_url() .'js/jquery.qrcode.js"></script>
-                        <script src="'. base_url() .'js/qrcode.js"></script>';
-            $js_rcp .= '<script>
-                        $(document).ready(function(){
-                            var qrcode = $("#qr_code").attr("qr_code_value");
-                            jQuery("#qr_code").qrcode({
-                                width: 120,
-                                height: 100,
-                                text    : qrcode
-                            });
-                        }); 
-                        </script>';
+            // $js_rcp .= '<script src="'. base_url() .'js/jquery.qrcode.js"></script>
+            //             <script src="'. base_url() .'js/qrcode.js"></script>';
+            // $js_rcp .= '<script>
+            //             $(document).ready(function(){
+            //                 var qrcode = $("#qr_code").attr("qr_code_value");
+            //                 jQuery("#qr_code").qrcode({
+            //                     width: 120,
+            //                     height: 100,
+            //                     text    : qrcode
+            //                 });
+            //             }); 
+            //             </script>';
 
             $js_rcp .= '<script>setTimeout(function (){ print(); }, 10);</script>';
-        }elseif($is_bill && $is_bill == 'osqr'){
-            $js_rcp .= $this->align_center('<div id="qr_code" style="display: block;
-                      margin-left: auto;
-                      margin-right: auto;
-                      margin-top: 5px;
-                      width: 40%;" qr_code_value="'.$sales_id.'"></div>',PAPER_WIDTH," ")."\r\n";
-            
-            $js_rcp .= '<script src="'. base_url() .'js/jquery.qrcode.js"></script>
-                        <script src="'. base_url() .'js/qrcode.js"></script>';
-            $js_rcp .= '<script>
-                        $(document).ready(function(){
-                            var qrcode = $("#qr_code").attr("qr_code_value");
-                            jQuery("#qr_code").qrcode({
-                                width: 120,
-                                height: 100,
-                                text    : qrcode
-                            });
-                        }); 
-                        </script>';
-
-            $js_rcp .= '<script>print()</script>';
         }else{
             $js_rcp .= '<script>print()</script>';
         }
@@ -31992,1067 +31978,5 @@ class Cashier extends Reads {
             // else           
         }
         return array('msg'=>'Receipt # '.(!empty($order['ref']) ? $order['ref'] : $sales_id).' has been printed','js_rcp'=>$js_rcp);
-    }
-
-    public function print_os_qr($sales_id=null,$not_printed_only=true,$reprinted=false,$use_main=false){
-            
-            if($use_main){
-                $this->db = $this->load->database('main',true);
-            }
-            $return = $this->get_order(false,$sales_id);
-            $order = $return['order'];
-            $details = $return['details'];
-            $details2 = $return['details2'];
-            $details_to = $return['details_to'];
-
-
-            $update_line_ids = array();
-            $update_line_mod_ids = array();
-            $update_line_submod_ids = array();
-            $print_bar_str = array();
-                // $print_bar_str[] = strtoupper($order['type']);
-            $print_bar_str[] = "Ref #: ".$order['ref'];
-            $print_bar_str[] = "Name: ".strtoupper($order['customer_name']);
-                // $print_bar_str[] = "Reference # ".$order['sales_id'];
-            // echo "<pre>",print_r($details2),"</pre>";die();
-            $js_rcps = array();
-                $has_to_print = 0;
-                $update_line_ids = array();
-                // $print_str = $this->os_header();
-                $print_str =  "";
-                $print_str_part_1_v2 ="";
-                $print_str_part_2_v2 ="";
-                $print_str_part_3_v2 ="";
-                $print_str_part_4_v2 ="";
-                $print_str .=  align_center(strtoupper('ORDER SLIP'),PAPER_WIDTH," ")."\r\n";
-                  $guest = (int)$order['guest'];
-                // echo var_dump($guest);
-                if($guest == 0)
-                    $guest = 1;
-                if($order['type'] == "reservation"){
-                    $print_str .= "Reference # ".$order['ref_no']."\r\n";
-                    $print_str .= "Transaction # ".$order['sales_id']."      "."Guest # : ".$guest."\r\n";
-
-                }else{
-                    $print_str .= "Reference # ".$order['sales_id']."      "."Guest # : ".$guest."\r\n";
-                }
-              
-                // $print_str .=strtoupper($order['type']) ."\r\n";
-                $serve_no = $order['serve_no'];
-                if($serve_no > 0){
-                    $print_str .= "Serve No: ".$serve_no."\r\n";
-                    $print_str_part_3_v2 .= "Serve No: ".$serve_no."\r\n";
-                }
-                if($order['waiter_username'] != ""){
-                    $print_str .= "FS: ".$order['waiter_username']."\r\n";
-                    $print_str_part_2_v2 .=  "FS: ".strtoupper($order['waiter_username'])."              ".strtoupper($order['type'])."\r\n";
-                }
-                
-                // $print_str .= "============"."\r\n";
-                $print_str .= PAPER_LINE."\r\n";
-                if($order['inactive'] == 1){
-                    $print_str .=  align_center('*** VOIDED TRANSACTION ***',PAPER_WIDTH," ")."\r\n\r\n";
-                }
-                $print_str .=  align_center(strtoupper('Billing Printer'),PAPER_WIDTH," ")."\r\n\r\n";
-                
-                if($reprinted){
-                    $print_str .=  align_center('[REPRINTED]',PAPER_WIDTH," ")."\r\n\r\n";
-                }
-               
-                // echo "<pre>",print_r($details2),"</pre>";
-                foreach ($details2 as $menu_id => $val) {
-                    if(isset($val['retail']) &&  $val['retail'] == 1){
-                        continue;
-                    }
-                    $category = $this->site_model->get_tbl('menus',array('menu_id'=>$val['menu_id']),array(),null,true,'menu_sub_cat_id');
-                    $cat = $category[0];
-                    // echo $this->db->last_query();die();
-                    // echo "<pre>",print_r($cat->menu_sub_cat_id),"</pre>";die();
-
-                    // if($printer['sub_cat_id'] == $cat->menu_sub_cat_id){
-                        $all_str = "";
-                        $menu_str = "";
-                        
-                        $qty = 0;
-                        $remarks = "";
-                        $modi = 0;
-                        foreach($val['dets'] as $line_id =>$dets){
-                            
-                            $mod_bar_str = "";
-                            if( $cat->menu_sub_cat_id == BEVERAGE_ID){
-
-                                    $print_bar_str[] = $val['name'];
-                                    
-                            }
-                            if($not_printed_only){
-
-                                if($dets['kitchen_slip_printed'] == 0){  
-                                     // var_dump($not_printed_only);
-                                    // $all_str .= $menu_str;
-                                    $update_line_ids[]=$dets['id'];
-                                    // $has_to_print++;
-
-
-                                    if(count($dets['modifiers']) > 0){
-                                        
-                                        // if($printer['sub_cat_id'] == SUBCAT_BEV){
-                                        //     $all_str .= $print_mod_bev;
-                                        // }else{
-                                        //     $all_str .= $print_mod_food;
-                                        // }
-                                        if($cat->menu_sub_cat_id != RAMEN_ID){
-                                            $print_str_part_1_v2 .= "<bold>";
-                                            $print_str_part_1_v2 .= $this->append_chars($dets['qty']." @ ","right",4," ");
-                                            $print_str_part_1_v2 .= "</bold>";
-                                            $all_str .= $this->append_chars($dets['qty'],"right",4," ");
-                                            // echo $str;
-                                            $len = strlen($val['name']);
-
-                                            if($len > 30){
-                                                $arr2 = str_split($val['name'], 30);
-                                                $counter = 1;
-                                                foreach($arr2 as $k => $vv){
-                                                    if($counter == 1){
-                                                       $all_str .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                       $print_str_part_1_v2  .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                    }else{
-                                                        // if ($val['qty'] == 1) {
-                                                            $all_str .= $this->append_chars("","right",4," ");
-                                                            $all_str .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                            $print_str_part_1_v2  .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-
-                                                        // } else {
-                                                            // $print_str .= $this->append_chars(substrwords($vv,100,"")." @ ".$val['price'],"right",PAPER_DET_COL_2," ").
-                                                            //     $this->append_chars("","left",PAPER_DET_COL_3," ")."\r\n";
-                                                        // }
-                                                    }
-                                                    $counter++;
-                                                }
-
-                                            }else{
-                                                $all_str .= $this->append_chars(substrwords($val['name'],100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                $print_str_part_1_v2  .= $this->append_chars(substrwords($val['name'],100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                            }
-
-                                            if(isset($dets['remarks']) && $dets['remarks'] != ""){
-                                                $all_str .= "     * ";
-                                                $all_str .= $this->append_chars(ucwords($dets['remarks']),"right",PAPER_DET_COL_2," ")."\r\n";
-                                                $print_str_part_1_v2  .= "<indentbold>     * ".$this->append_chars(ucwords($dets['remarks']),"right",PAPER_DET_COL_2," ")."</indentbold>"."\r\n";
-                                            }
-
-                                            // echo $str.'ssss';
-                                            // echo "<pre>",print_r($dets['modifiers']),"</pre>";die();
-
-                                            foreach ($dets['modifiers'] as $mod_id => $mod) {
-
-                                                $mod_sub_cat = $this->site_model->get_tbl('modifiers',array('mod_id'=>$mod['id']),array(),null,true,'mod_sub_cat_id');
-                                                $mod_sc = $mod_sub_cat[0];
-
-
-                                                $mod_str = "";
-                                                $kitchen_mod_slip_printed = $mod['kitchen_slip_printed'];
-                                                if($mod['kitchen_slip_printed'] == ""){
-                                                    $kitchen_mod_slip_printed = 0;
-                                                }
-                                                $mod_str .= "     - ";
-
-                                                if($mod['qty'] == 1){
-                                                    $mod_str .= $this->append_chars(substrwords($mod['name'],100,""),"right",PAPER_DET_COL_2," ")
-                                                    .$this->append_chars(null,"left",8," ")."\r\n";
-                                                }else{
-                                                    $mod_str .= $this->append_chars(substrwords($mod['qty'].' '.$mod['name'],100,""),"right",PAPER_DET_COL_2," ")
-                                                    .$this->append_chars(null,"left",8," ")."\r\n";
-                                                }
-                                                
-                                                
-                                                if(!empty( $mod_bar_str)){
-                                                     $mod_bar_str .= ", ".substrwords($mod['name'],100,"");
-                                                }else{
-                                                    $mod_bar_str .= substrwords($mod['name'],100,"");
-                                                }
-
-                                                $smod_str = "";
-                                                if(isset($mod['submodifiers'])){
-                                                    
-                                                    foreach($mod['submodifiers'] as $sub_id => $subm){
-                                                        if($subm['mod_line_id'] == $mod['mod_line_id']){
-                                                            $kitchen_submod_slip_printed = $subm['kitchen_slip_printed'];
-                                                            if($subm['kitchen_slip_printed'] == ""){
-                                                                $kitchen_submod_slip_printed = 0;
-                                                            }
-
-                                                            $smod_str .= "         * ";
-
-                                                            if($subm['qty'] == 1){
-                                                                $smod_str .= $this->append_chars(substrwords($subm['name'],100,""),"right",PAPER_DET_COL_2," ")
-                                                            .$this->append_chars(null,"left",8," ")."\r\n";
-                                                            }else{
-                                                                $smod_str .= $this->append_chars(substrwords($subm['qty'].' '.$subm['name'],100,""),"right",PAPER_DET_COL_2," ")
-                                                            .$this->append_chars(null,"left",8," ")."\r\n";
-                                                            }
-                                                            
-
-                                                            if($not_printed_only){
-                                                                if($kitchen_submod_slip_printed == 0){ 
-                                                                    // if($mod_sc->mod_sub_cat_id == $printer['sub_cat_id']){
-                                                                    //     // $print_mod_bev .= $str;
-                                                                    //     $all_str .= $smod_str;
-                                                                    //     $print_str_part_1_v2  .= $smod_str;
-                                                                    //     $has_to_print++;
-                                                                    // }
-                                                                    // else{
-                                                                    //     // $print_mod_food .= $str;
-                                                                    //     $all_str .= $mod_str;
-                                                                    // }
-                                                                    // $all_str .= $mod_str;
-                                                                    $update_line_submod_ids[]=$subm['sales_submod_id'];
-                                                                    // $has_to_print++;
-                                                                }   
-                                                            }   
-                                                            else{
-                                                                // if($mod_sc->mod_sub_cat_id == $printer['sub_cat_id']){
-                                                                //     // $print_mod_bev .= $str;
-                                                                //     $all_str .= $smod_str;
-                                                                //     $print_str_part_1_v2  .= $smod_str;
-                                                                //     $has_to_print++;
-                                                                // }
-                                                                // else{
-                                                                //     // $print_mod_food .= $str;
-                                                                //     $all_str .= $mod_str;
-                                                                // }
-                                                                // $all_str .= $mod_str;
-                                                                $update_line_submod_ids[]=$subm['sales_submod_id'];
-                                                                // $has_to_print++;
-                                                            }
-
-
-
-                                                        }
-                                                    }
-
-                                                }
-
-                                                if($not_printed_only){
-                                                    if($kitchen_mod_slip_printed == 0){ 
-                                                        // if($mod_sc->mod_sub_cat_id == $printer['sub_cat_id']){
-                                                            // $print_mod_bev .= $str;
-                                                            $all_str .= $mod_str;
-                                                            $all_str .= $smod_str;
-                                                            $print_str_part_1_v2  .= $mod_str;
-                                                            $print_str_part_1_v2  .= $smod_str;
-                                                            $has_to_print++;
-                                                        // }
-                                                        // else{
-                                                        //     // $print_mod_food .= $str;
-                                                        //     $all_str .= $mod_str;
-                                                        // }
-                                                        // $all_str .= $mod_str;
-                                                        $update_line_mod_ids[]=$mod['sales_mod_id'];
-                                                        // $has_to_print++;
-                                                    }   
-                                                }   
-                                                else{
-                                                    // if($mod_sc->mod_sub_cat_id == $printer['sub_cat_id']){
-                                                        // $print_mod_bev .= $str;
-                                                        $all_str .= $mod_str;
-                                                        $all_str .= $smod_str;
-                                                        $print_str_part_1_v2  .= $mod_str;
-                                                        $print_str_part_1_v2  .= $smod_str;
-                                                        $has_to_print++;
-                                                    // }
-                                                    // else{
-                                                    //     // $print_mod_food .= $str;
-                                                    //     $all_str .= $mod_str;
-                                                    // }
-                                                    // $all_str .= $mod_str;
-                                                    $update_line_mod_ids[]=$mod['sales_mod_id'];
-                                                    // $has_to_print++;
-                                                }
-                                            }
-
-                                        }
-
-
-                                    }else{
-                                         $print_bar_str[]  = "";
-                                         $print_bar_str[] = $dets['remarks'];
-                                         // echo "asdasdasdsadsadasd";
-                                         //             echo "<pre>aa:",print_r($val),"</pre>";//die();
-                                        $qty += $dets['qty'];
-                                        if($remarks == ""){
-                                            $remarks = $dets['remarks'];
-                                        }else{
-                                            if($dets['remarks'] != ""){
-                                                $remarks .= ", ".$dets['remarks'];
-                                            }
-                                        }
-                                    }
-
-                                }   
-                                // echo " " .$cat->menu_sub_cat_id   . " : ". BEVERAGE_ID. "<br>";
-                                // if( $cat->menu_sub_cat_id == BEVERAGE_ID){
-
-                                //     $print_bar_str[] = $val['name'];
-                                    
-                                // }
-                            }   
-                            else{
-                                // $all_str .= $menu_str;
-                                $update_line_ids[]=$dets['id'];
-                                // $has_to_print++;
-
-                                if(count($dets['modifiers']) > 0){
-                                        
-                                        
-                                    // if($printer['sub_cat_id'] == SUBCAT_BEV){
-                                    //     $all_str .= $print_mod_bev;
-                                    // }else{
-                                    //     $all_str .= $print_mod_food;
-                                    // }
-
-                                    if($cat->menu_sub_cat_id != RAMEN_ID){
-
-                                        $all_str .= $this->append_chars($dets['qty'],"right",4," ");
-                                        $print_str_part_1_v2  .= "<bold>".$this->append_chars($dets['qty']." @ ","right",4," ")."</bold>";
-                                        // echo $str;
-                                        $len = strlen($val['name']);
-
-                                        if($len > 30){
-                                            $arr2 = str_split($val['name'], 30);
-                                            $counter = 1;
-                                            foreach($arr2 as $k => $vv){
-                                                if($counter == 1){
-                                                   $all_str .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                   $print_str_part_1_v2  .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                }else{
-                                                    // if ($val['qty'] == 1) {
-                                                        $all_str .= $this->append_chars("","right",4," ");
-                                                        $all_str .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                        $print_str_part_1_v2  .= $this->append_chars("","right",4," ");
-                                                        $print_str_part_1_v2  .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                    // } else {
-                                                        // $print_str .= $this->append_chars(substrwords($vv,100,"")." @ ".$val['price'],"right",PAPER_DET_COL_2," ").
-                                                        //     $this->append_chars("","left",PAPER_DET_COL_3," ")."\r\n";
-                                                    // }
-                                                }
-                                                $counter++;
-                                            }
-
-                                        }else{
-                                            $all_str .= $this->append_chars(substrwords($val['name'],100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                            $print_str_part_1_v2  .= $this->append_chars(substrwords($val['name'],100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                        }
-
-                                        if(isset($dets['remarks']) && $dets['remarks'] != ""){
-                                            $all_str .= "     * ";
-                                            $all_str .= $this->append_chars(ucwords($dets['remarks']),"right",PAPER_DET_COL_2," ")."\r\n";
-                                            $print_str_part_1_v2 .= "<indentbold>". "     * ".$this->append_chars(ucwords($dets['remarks']),"right",PAPER_DET_COL_2," ")."</indentbold>"."\r\n";
-                                        }
-
-                                        // echo $str.'ssss';
-                                        // echo "<pre>",print_r($dets['modifiers']),"</pre>";die();
-
-                                        foreach ($dets['modifiers'] as $mod_id => $mod) {
-
-                                            $mod_sub_cat = $this->site_model->get_tbl('modifiers',array('mod_id'=>$mod['id']),array(),null,true,'mod_sub_cat_id');
-                                            $mod_sc = $mod_sub_cat[0];
-
-
-                                            $mod_str = "";
-                                            $kitchen_mod_slip_printed = $mod['kitchen_slip_printed'];
-                                            if($mod['kitchen_slip_printed'] == ""){
-                                                $kitchen_mod_slip_printed = 0;
-                                            }
-                                            $mod_str .= "     - ";
-                                            $mod_str .= $this->append_chars(substrwords($mod['qty'].' '.$mod['name'],100,""),"right",PAPER_DET_COL_2," ")
-                                                .$this->append_chars(null,"left",8," ")."\r\n";
-                                            
-                                            if(!empty( $mod_bar_str)){
-                                                 $mod_bar_str .= ", ".substrwords($mod['name'],100,"");
-                                            }else{
-                                                $mod_bar_str .= substrwords($mod['name'],100,"");
-                                            }
-
-                                            //printing of os para sa submdifer
-                                            $smod_str = "";
-                                            if(isset($mod['submodifiers'])){
-                                                    
-                                                foreach($mod['submodifiers'] as $sub_id => $subm){
-                                                    if($subm['mod_line_id'] == $mod['mod_line_id']){
-                                                        $kitchen_submod_slip_printed = $subm['kitchen_slip_printed'];
-                                                        if($subm['kitchen_slip_printed'] == ""){
-                                                            $kitchen_submod_slip_printed = 0;
-                                                        }
-
-                                                        $smod_str .= "         * ";
-                                                        $smod_str .= $this->append_chars(substrwords($subm['qty'].' '.$subm['name'],100,""),"right",PAPER_DET_COL_2," ")
-                                                        .$this->append_chars(null,"left",8," ")."\r\n";
-
-                                                        if($not_printed_only){
-                                                            if($kitchen_submod_slip_printed == 0){ 
-                                                                // if($mod_sc->mod_sub_cat_id == $printer['sub_cat_id']){
-                                                                //     // $print_mod_bev .= $str;
-                                                                //     $all_str .= $smod_str;
-                                                                //     $print_str_part_1_v2  .= $smod_str;
-                                                                //     $has_to_print++;
-                                                                // }
-                                                                // else{
-                                                                //     // $print_mod_food .= $str;
-                                                                //     $all_str .= $mod_str;
-                                                                // }
-                                                                // $all_str .= $mod_str;
-                                                                $update_line_submod_ids[]=$subm['sales_submod_id'];
-                                                                // $has_to_print++;
-                                                            }   
-                                                        }   
-                                                        else{
-                                                            // if($mod_sc->mod_sub_cat_id == $printer['sub_cat_id']){
-                                                            //     // $print_mod_bev .= $str;
-                                                            //     $all_str .= $smod_str;
-                                                            //     $print_str_part_1_v2  .= $smod_str;
-                                                            //     $has_to_print++;
-                                                            // }
-                                                            // else{
-                                                            //     // $print_mod_food .= $str;
-                                                            //     $all_str .= $mod_str;
-                                                            // }
-                                                            // $all_str .= $mod_str;
-                                                            $update_line_submod_ids[]=$subm['sales_submod_id'];
-                                                            // $has_to_print++;
-                                                        }
-
-
-
-                                                    }
-                                                }
-
-                                            }
-
-
-
-                                            if($not_printed_only){
-                                                if($kitchen_mod_slip_printed == 0){ 
-                                                    // if($mod_sc->mod_sub_cat_id == $printer['sub_cat_id']){
-                                                        // $print_mod_bev .= $str;
-                                                        $all_str .= $mod_str;
-                                                        $all_str .= $smod_str;
-                                                        $print_str_part_1_v2 .= $mod_str;
-                                                        $print_str_part_1_v2 .= $smod_str;
-                                                        $has_to_print++;
-                                                    // }
-                                                    // else{
-                                                    //     // $print_mod_food .= $str;
-                                                    //     $all_str .= $mod_str;
-                                                    // }
-                                                    // $all_str .= $mod_str;
-                                                    $update_line_mod_ids[]=$mod['sales_mod_id'];
-                                                    // $has_to_print++;
-                                                }   
-                                            }   
-                                            else{
-                                                // echo $printer['sub_cat_id'].'====';
-                                                // if($mod_sc->mod_sub_cat_id == $printer['sub_cat_id']){
-                                                    // $print_mod_bev .= $str;
-                                                    $all_str .= $mod_str;
-                                                    $all_str .= $smod_str;
-                                                    $print_str_part_1_v2 .= $mod_str;
-                                                    $print_str_part_1_v2 .= $smod_str;
-                                                    $has_to_print++;
-                                                // }
-                                                // else{
-                                                //     // $print_mod_food .= $str;
-                                                //     $all_str .= $mod_str;
-                                                // }
-                                                // $all_str .= $mod_str;
-                                                $update_line_mod_ids[]=$mod['sales_mod_id'];
-                                                // $has_to_print++;
-                                            }
-                                        }
-
-                                    }
-                                   
-
-                                }else{
-                                    $qty += $dets['qty'];
-                                    if($remarks == ""){
-                                        $remarks = $dets['remarks'];
-                                    }else{
-                                        if($dets['remarks'] != ""){
-                                            $remarks .= ", ".$dets['remarks'];
-                                        }
-                                    }
-                                }
-
-                                if(isset($mod_str)){
-                                    $print_bar_str[] = $mod_bar_str;
-                                }
-
-                                $print_bar_str[] = $dets['remarks'];
-
-                            }
-
-                            
-
-                        }
-
-                        if($qty > 0){
-
-                            // if($printer['sub_cat_id'] == $cat->menu_sub_cat_id){
-                                $has_to_print++;
-                                $all_str .= $this->append_chars($qty,"right",4," ");
-                                $print_str_part_1_v2 .= "<bold>".$this->append_chars($qty ." @ " ,"right",4," ")."</bold>";
-                                $len = strlen($val['name']);
-
-                                if($len > 30){
-                                    $arr2 = str_split($val['name'], 30);
-                                    $counter = 1;
-                                    foreach($arr2 as $k => $vv){
-                                        if($counter == 1){
-                                           $all_str .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                            $print_str_part_1_v2 .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                        }else{
-                                            // if ($val['qty'] == 1) {
-                                                $all_str .= $this->append_chars("","right",4," ");
-                                                $all_str .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                $print_str_part_1_v2 .= $this->append_chars("","right",4," ");
-                                                $print_str_part_1_v2 .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                            // } else {
-                                                // $print_str .= $this->append_chars(substrwords($vv,100,"")." @ ".$val['price'],"right",PAPER_DET_COL_2," ").
-                                                //     $this->append_chars("","left",PAPER_DET_COL_3," ")."\r\n";
-                                            // }
-                                        }
-                                        $counter++;
-                                    }
-
-                                }else{
-                                    $all_str .= $this->append_chars(substrwords($val['name'],100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                    $print_str_part_1_v2 .= $this->append_chars(substrwords($val['name'],100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                }
-
-                                // if(isset($order['type']) && $order['type'] == "App Order" && isset($order['memo']) &&  $order['memo'] != ""){
-                                        // $all_str .= "     * ";
-                                        // $all_str .= $this->append_chars(ucwords($order['memo']),"right",PAPER_DET_COL_2," ")."\r\n";
-                                // }else{
-                                    if(isset($remarks) && $remarks != ""){
-                                        $all_str .= "     * ";
-                                        $all_str .= $this->append_chars(ucwords($remarks),"right",PAPER_DET_COL_2," ")."\r\n";
-                                        $print_str_part_1_v2 .=  "<indentbold>     * ".$this->append_chars(ucwords($remarks),"right",PAPER_DET_COL_2," ")."</indentbold>\r\n";
-                                    }
-
-                                   
-                                // }
-
-                                // if(isset($remarks) && $remarks != ""){
-                                    // $all_str .= "     * ";
-                                    // $all_str .= $this->append_chars(ucwords($remarks),"right",PAPER_DET_COL_2," ")."\r\n";
-                                // }
-
-                            // }
-
-                        }
-                        
-
-                   
-                        $print_str .= $all_str;
-                        // echo $print_str;
-                    // }
-                }
-
-                ////for takeout dinein
-
-                if(count($details_to) > 0){
-
-                    // $print_str .= "\r\n";
-                    $print_str .= "===========FOR TAKEOUT=========="."\r\n";
-
-
-
-                    foreach ($details_to as $menu_id => $val) {
-                        if(isset($val['retail']) &&  $val['retail'] == 1){
-                            continue;
-                        }
-                        $category = $this->site_model->get_tbl('menus',array('menu_id'=>$val['menu_id']),array(),null,true,'menu_sub_cat_id');
-                        $cat = $category[0];
-                        // echo $this->db->last_query();die();
-                        // echo "<pre>",print_r($cat->menu_sub_cat_id),"</pre>";die();
-
-                        // if($printer['sub_cat_id'] == $cat->menu_sub_cat_id){
-                            $all_str = "";
-                            $menu_str = "";
-                            
-                            $qty = 0;
-                            $remarks = "";
-                            $modi = 0;
-                            foreach($val['dets'] as $line_id =>$dets){
-                                
-                                $mod_bar_str = "";
-                                if( $cat->menu_sub_cat_id == BEVERAGE_ID){
-
-                                        $print_bar_str[] = $val['name'];
-                                        
-                                }
-                                if($not_printed_only){
-
-                                    if($dets['kitchen_slip_printed'] == 0){  
-                                         // var_dump($not_printed_only);
-                                        // $all_str .= $menu_str;
-                                        $update_line_ids[]=$dets['id'];
-                                        // $has_to_print++;
-
-
-                                        if(count($dets['modifiers']) > 0){
-                                            
-                                            // if($printer['sub_cat_id'] == SUBCAT_BEV){
-                                            //     $all_str .= $print_mod_bev;
-                                            // }else{
-                                            //     $all_str .= $print_mod_food;
-                                            // }
-                                            if($cat->menu_sub_cat_id != RAMEN_ID){
-                                                $print_str_part_1_v2 .= "<bold>";
-                                                $print_str_part_1_v2 .= $this->append_chars($dets['qty']." @ ","right",4," ");
-                                                $print_str_part_1_v2 .= "</bold>";
-                                                $all_str .= $this->append_chars($dets['qty'],"right",4," ");
-                                                // echo $str;
-                                                $len = strlen($val['name']);
-
-                                                if($len > 30){
-                                                    $arr2 = str_split($val['name'], 30);
-                                                    $counter = 1;
-                                                    foreach($arr2 as $k => $vv){
-                                                        if($counter == 1){
-                                                           $all_str .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                           $print_str_part_1_v2  .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                        }else{
-                                                            // if ($val['qty'] == 1) {
-                                                                $all_str .= $this->append_chars("","right",4," ");
-                                                                $all_str .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                                $print_str_part_1_v2  .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-
-                                                            // } else {
-                                                                // $print_str .= $this->append_chars(substrwords($vv,100,"")." @ ".$val['price'],"right",PAPER_DET_COL_2," ").
-                                                                //     $this->append_chars("","left",PAPER_DET_COL_3," ")."\r\n";
-                                                            // }
-                                                        }
-                                                        $counter++;
-                                                    }
-
-                                                }else{
-                                                    $all_str .= $this->append_chars(substrwords($val['name'],100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                    $print_str_part_1_v2  .= $this->append_chars(substrwords($val['name'],100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                }
-
-                                                if(isset($dets['remarks']) && $dets['remarks'] != ""){
-                                                    $all_str .= "     * ";
-                                                    $all_str .= $this->append_chars(ucwords($dets['remarks']),"right",PAPER_DET_COL_2," ")."\r\n";
-                                                    $print_str_part_1_v2  .= "<indentbold>     * ".$this->append_chars(ucwords($dets['remarks']),"right",PAPER_DET_COL_2," ")."</indentbold>"."\r\n";
-                                                }
-
-                                                // echo $str.'ssss';
-                                                // echo "<pre>",print_r($dets['modifiers']),"</pre>";die();
-
-                                                foreach ($dets['modifiers'] as $mod_id => $mod) {
-
-                                                    $mod_sub_cat = $this->site_model->get_tbl('modifiers',array('mod_id'=>$mod['id']),array(),null,true,'mod_sub_cat_id');
-                                                    $mod_sc = $mod_sub_cat[0];
-
-
-                                                    $mod_str = "";
-                                                    $kitchen_mod_slip_printed = $mod['kitchen_slip_printed'];
-                                                    if($mod['kitchen_slip_printed'] == ""){
-                                                        $kitchen_mod_slip_printed = 0;
-                                                    }
-                                                    $mod_str .= "     - ";
-
-                                                    if($mod['qty'] == 1){
-                                                        $mod_str .= $this->append_chars(substrwords($mod['name'],100,""),"right",PAPER_DET_COL_2," ")
-                                                        .$this->append_chars(null,"left",8," ")."\r\n";
-                                                    }else{
-                                                        $mod_str .= $this->append_chars(substrwords($mod['qty'].' '.$mod['name'],100,""),"right",PAPER_DET_COL_2," ")
-                                                        .$this->append_chars(null,"left",8," ")."\r\n";
-                                                    }
-                                                    
-                                                    
-                                                    if(!empty( $mod_bar_str)){
-                                                         $mod_bar_str .= ", ".substrwords($mod['name'],100,"");
-                                                    }else{
-                                                        $mod_bar_str .= substrwords($mod['name'],100,"");
-                                                    }
-
-                                                    if($not_printed_only){
-                                                        if($kitchen_mod_slip_printed == 0){ 
-                                                            // if($mod_sc->mod_sub_cat_id == $printer['sub_cat_id']){
-                                                                // $print_mod_bev .= $str;
-                                                                $all_str .= $mod_str;
-                                                                $print_str_part_1_v2  .= $mod_str;
-                                                                $has_to_print++;
-                                                            // }
-                                                            // else{
-                                                            //     // $print_mod_food .= $str;
-                                                            //     $all_str .= $mod_str;
-                                                            // }
-                                                            // $all_str .= $mod_str;
-                                                            $update_line_mod_ids[]=$mod['sales_mod_id'];
-                                                            // $has_to_print++;
-                                                        }   
-                                                    }   
-                                                    else{
-                                                        // if($mod_sc->mod_sub_cat_id == $printer['sub_cat_id']){
-                                                            // $print_mod_bev .= $str;
-                                                            $all_str .= $mod_str;
-                                                            $print_str_part_1_v2  .= $mod_str;
-                                                            $has_to_print++;
-                                                        // }
-                                                        // else{
-                                                        //     // $print_mod_food .= $str;
-                                                        //     $all_str .= $mod_str;
-                                                        // }
-                                                        // $all_str .= $mod_str;
-                                                        $update_line_mod_ids[]=$mod['sales_mod_id'];
-                                                        // $has_to_print++;
-                                                    }
-                                                }
-
-                                            }
-
-
-                                        }else{
-                                             $print_bar_str[]  = "";
-                                             $print_bar_str[] = $dets['remarks'];
-                                             // echo "asdasdasdsadsadasd";
-                                             //             echo "<pre>aa:",print_r($val),"</pre>";//die();
-                                            $qty += $dets['qty'];
-                                            if($remarks == ""){
-                                                $remarks = $dets['remarks'];
-                                            }else{
-                                                if($dets['remarks'] != ""){
-                                                    $remarks .= ", ".$dets['remarks'];
-                                                }
-                                            }
-                                        }
-
-                                    }   
-                                    // echo " " .$cat->menu_sub_cat_id   . " : ". BEVERAGE_ID. "<br>";
-                                    // if( $cat->menu_sub_cat_id == BEVERAGE_ID){
-
-                                    //     $print_bar_str[] = $val['name'];
-                                        
-                                    // }
-                                }   
-                                else{
-                                    // $all_str .= $menu_str;
-                                    $update_line_ids[]=$dets['id'];
-                                    // $has_to_print++;
-
-                                    if(count($dets['modifiers']) > 0){
-                                            
-                                            
-                                        // if($printer['sub_cat_id'] == SUBCAT_BEV){
-                                        //     $all_str .= $print_mod_bev;
-                                        // }else{
-                                        //     $all_str .= $print_mod_food;
-                                        // }
-
-                                        if($cat->menu_sub_cat_id != RAMEN_ID){
-
-                                            $all_str .= $this->append_chars($dets['qty'],"right",4," ");
-                                            $print_str_part_1_v2  .= "<bold>".$this->append_chars($dets['qty']." @ ","right",4," ")."</bold>";
-                                            // echo $str;
-                                            $len = strlen($val['name']);
-
-                                            if($len > 30){
-                                                $arr2 = str_split($val['name'], 30);
-                                                $counter = 1;
-                                                foreach($arr2 as $k => $vv){
-                                                    if($counter == 1){
-                                                       $all_str .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                       $print_str_part_1_v2  .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                    }else{
-                                                        // if ($val['qty'] == 1) {
-                                                            $all_str .= $this->append_chars("","right",4," ");
-                                                            $all_str .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                            $print_str_part_1_v2  .= $this->append_chars("","right",4," ");
-                                                            $print_str_part_1_v2  .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                        // } else {
-                                                            // $print_str .= $this->append_chars(substrwords($vv,100,"")." @ ".$val['price'],"right",PAPER_DET_COL_2," ").
-                                                            //     $this->append_chars("","left",PAPER_DET_COL_3," ")."\r\n";
-                                                        // }
-                                                    }
-                                                    $counter++;
-                                                }
-
-                                            }else{
-                                                $all_str .= $this->append_chars(substrwords($val['name'],100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                $print_str_part_1_v2  .= $this->append_chars(substrwords($val['name'],100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                            }
-
-                                            if(isset($dets['remarks']) && $dets['remarks'] != ""){
-                                                $all_str .= "     * ";
-                                                $all_str .= $this->append_chars(ucwords($dets['remarks']),"right",PAPER_DET_COL_2," ")."\r\n";
-                                                $print_str_part_1_v2 .= "<indentbold>". "     * ".$this->append_chars(ucwords($dets['remarks']),"right",PAPER_DET_COL_2," ")."</indentbold>"."\r\n";
-                                            }
-
-                                            // echo $str.'ssss';
-                                            // echo "<pre>",print_r($dets['modifiers']),"</pre>";die();
-
-                                            foreach ($dets['modifiers'] as $mod_id => $mod) {
-
-                                                $mod_sub_cat = $this->site_model->get_tbl('modifiers',array('mod_id'=>$mod['id']),array(),null,true,'mod_sub_cat_id');
-                                                $mod_sc = $mod_sub_cat[0];
-
-
-                                                $mod_str = "";
-                                                $kitchen_mod_slip_printed = $mod['kitchen_slip_printed'];
-                                                if($mod['kitchen_slip_printed'] == ""){
-                                                    $kitchen_mod_slip_printed = 0;
-                                                }
-                                                $mod_str .= "     - ";
-                                                $mod_str .= $this->append_chars(substrwords($mod['name'],100,""),"right",PAPER_DET_COL_2," ")
-                                                    .$this->append_chars(null,"left",8," ")."\r\n";
-                                                
-                                                if(!empty( $mod_bar_str)){
-                                                     $mod_bar_str .= ", ".substrwords($mod['name'],100,"");
-                                                }else{
-                                                    $mod_bar_str .= substrwords($mod['name'],100,"");
-                                                }
-
-                                                if($not_printed_only){
-                                                    if($kitchen_mod_slip_printed == 0){ 
-                                                        // if($mod_sc->mod_sub_cat_id == $printer['sub_cat_id']){
-                                                            // $print_mod_bev .= $str;
-                                                            $all_str .= $mod_str;
-                                                            $print_str_part_1_v2 .= $mod_str;
-                                                            $has_to_print++;
-                                                        // }
-                                                        // else{
-                                                        //     // $print_mod_food .= $str;
-                                                        //     $all_str .= $mod_str;
-                                                        // }
-                                                        // $all_str .= $mod_str;
-                                                        $update_line_mod_ids[]=$mod['sales_mod_id'];
-                                                        // $has_to_print++;
-                                                    }   
-                                                }   
-                                                else{
-                                                    // echo $printer['sub_cat_id'].'====';
-                                                    // if($mod_sc->mod_sub_cat_id == $printer['sub_cat_id']){
-                                                        // $print_mod_bev .= $str;
-                                                        $all_str .= $mod_str;
-                                                        $print_str_part_1_v2 .= $mod_str;
-                                                        $has_to_print++;
-                                                    // }
-                                                    // else{
-                                                    //     // $print_mod_food .= $str;
-                                                    //     $all_str .= $mod_str;
-                                                    // }
-                                                    // $all_str .= $mod_str;
-                                                    $update_line_mod_ids[]=$mod['sales_mod_id'];
-                                                    // $has_to_print++;
-                                                }
-                                            }
-
-                                        }
-                                       
-
-                                    }else{
-                                        $qty += $dets['qty'];
-                                        if($remarks == ""){
-                                            $remarks = $dets['remarks'];
-                                        }else{
-                                            if($dets['remarks'] != ""){
-                                                $remarks .= ", ".$dets['remarks'];
-                                            }
-                                        }
-                                    }
-
-                                    if(isset($mod_str)){
-                                        $print_bar_str[] = $mod_bar_str;
-                                    }
-
-                                    $print_bar_str[] = $dets['remarks'];
-
-                                }
-
-                                
-
-                            }
-
-                            if($qty > 0){
-
-                                // if($printer['sub_cat_id'] == $cat->menu_sub_cat_id){
-                                    $has_to_print++;
-                                    $all_str .= $this->append_chars($qty,"right",4," ");
-                                    $print_str_part_1_v2 .= "<bold>".$this->append_chars($qty ." @ " ,"right",4," ")."</bold>";
-                                    $len = strlen($val['name']);
-
-                                    if($len > 30){
-                                        $arr2 = str_split($val['name'], 30);
-                                        $counter = 1;
-                                        foreach($arr2 as $k => $vv){
-                                            if($counter == 1){
-                                               $all_str .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                $print_str_part_1_v2 .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                            }else{
-                                                // if ($val['qty'] == 1) {
-                                                    $all_str .= $this->append_chars("","right",4," ");
-                                                    $all_str .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                    $print_str_part_1_v2 .= $this->append_chars("","right",4," ");
-                                                    $print_str_part_1_v2 .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                                // } else {
-                                                    // $print_str .= $this->append_chars(substrwords($vv,100,"")." @ ".$val['price'],"right",PAPER_DET_COL_2," ").
-                                                    //     $this->append_chars("","left",PAPER_DET_COL_3," ")."\r\n";
-                                                // }
-                                            }
-                                            $counter++;
-                                        }
-
-                                    }else{
-                                        $all_str .= $this->append_chars(substrwords($val['name'],100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                        $print_str_part_1_v2 .= $this->append_chars(substrwords($val['name'],100,""),"right",PAPER_DET_COL_2," ").$this->append_chars(null,"left",8," ")."\r\n";
-                                    }
-
-                                    // if(isset($order['type']) && $order['type'] == "App Order" && isset($order['memo']) &&  $order['memo'] != ""){
-                                            // $all_str .= "     * ";
-                                            // $all_str .= $this->append_chars(ucwords($order['memo']),"right",PAPER_DET_COL_2," ")."\r\n";
-                                    // }else{
-                                        if(isset($remarks) && $remarks != ""){
-                                            $all_str .= "     * ";
-                                            $all_str .= $this->append_chars(ucwords($remarks),"right",PAPER_DET_COL_2," ")."\r\n";
-                                            $print_str_part_1_v2 .=  "<indentbold>     * ".$this->append_chars(ucwords($remarks),"right",PAPER_DET_COL_2," ")."</indentbold>\r\n";
-                                        }
-
-                                       
-                                    // }
-
-                                    // if(isset($remarks) && $remarks != ""){
-                                        // $all_str .= "     * ";
-                                        // $all_str .= $this->append_chars(ucwords($remarks),"right",PAPER_DET_COL_2," ")."\r\n";
-                                    // }
-
-                                // }
-
-                            }
-                            
-
-                       
-                            $print_str .= $all_str;
-                            // echo $print_str;
-                        // }
-                    }
-
-
-                }
-
-               $print_str .= PAPER_LINE."\r\n";
-               if($order['table_name'] != ""){
-                    // $print_str .=  align_center($order['table_name'],PAPER_WIDTH," ")."\r\n";
-                    $print_str .= "Table #: ".$order['table_name']."  ";
-                    $print_str_part_3_v2 .= "Table #: ".$order['table_name']."  ";
-                }
-                if($order['update_date']){
-                    $print_str .= $order['update_date']."\r\n";
-                    $print_str_part_4_v2 .= $order['update_date']."\r\n";
-                }else{
-                    $print_str .= $order['datetime']."\r\n";
-                    $print_str_part_4_v2 .= $order['datetime']."\r\n";
-                }
-
-                 $print_str .=  align_center(strtoupper($order['type']),PAPER_WIDTH," ")."\r\n\r\n";
-              
-                // var_dump($has_to_print);
-                // echo "<pre>",print_r($print_bar_str),"</pre>";die();
-                // $has_to_print++; /
-                ##### MENU FOR EACH END #######################################################
-                // if($has_to_print > 0){
-                    $js = '';
-                    // if(PRINT_VERSION && PRINT_VERSION == 'V2'){
-                    //     if(BEVERAGE_BARCODE_ENABLED && count($print_bar_str) > 2){
-
-                    //         $this->do_print_bar_receipt_v2($print_bar_str);
-                    //      }
-                    //      /// echo "test";die();
-                    //     $this->do_print_os_v2($print_str_part_1_v2,BILLING_PRINTER,$printer['no'],$print_str_part_2_v2,$print_str_part_3_v2,$print_str_part_4_v2);  
-                    // }else 
-                    // if(PRINT_VERSION && PRINT_VERSION == 'V3'){
-                    //     if(BEVERAGE_BARCODE_ENABLED && count($print_bar_str) > 2){
-
-                    //         $js_rcp = $this->html_print($print_bar_str);
-
-                    //         $js_rcps[]=array('printer'=>BILLING_PRINTER,'value'=>$js_rcp);
-                    //      }
-
-                        $js_rcp = $this->html_print($print_str,'osqr');
-
-                        $js_rcps[]=array('printer'=>BILLING_PRINTER,'value'=>$js_rcp);
-                    // }else{
-                //         require APPPATH . 'libraries/phpqrcode/qrlib.php';
-                //         $text = " PRODUCT ID 23456";
-                //         $qr_filename=$sales_id.'.png'; 
-                //         QRcode::png($sales_id,$qr_filename);
-
-                //         require APPPATH . 'libraries/PHPRtfLite.php';
-
-                //         // register PHPRtfLite class loader
-                //         PHPRtfLite::registerAutoloader();
-
-                //         // rtf document
-                //         $rtf = new PHPRtfLite();
-
-                //         //paragraph formats
-                //         $parFormat = new PHPRtfLite_ParFormat();
-
-                //         $parGreyLeft = new PHPRtfLite_ParFormat();
-                //         $parGreyLeft->setShading(10);
-
-                //         $parGreyCenter = new PHPRtfLite_ParFormat(PHPRtfLite_ParFormat::TEXT_ALIGN_CENTER);
-                //         $parGreyCenter->setShading(10);
-
-                //         // $dir = dirname(__FILE__);
-
-                //         $sect = $rtf->addSection();
-
-                //         $filename = "qr_order.rtf";
-
-                //         $sect->writeText($print_str, new PHPRtfLite_Font(), new PHPRtfLite_ParFormat());
-
-                //         $dir = dirname(dirname(dirname(dirname(__FILE__))));
-                //         $sect->addImage($dir.'/'.$sales_id.'.png', null);
-                          
-                //         $rtf->save($filename, false); // false is only used for unit test
-
-                //         $batfile = "print.bat";
-                //         $fh1 = fopen($batfile,'w+');
-                //         $root = dirname(BASEPATH);
-                //         // $battxt = "write.exe /PT \"".realpath($root."/".$filename)."\" \"".BILLING_PRINTER."\"  ";
-                //         $battxt = "NOTEPAD /PT \"".realpath($root."/"."qr_order.txt")."\" \"".BILLING_PRINTER."\"  ";
-                //         echo $battxt;
-                //         fwrite($fh1, $battxt);
-                //         fclose($fh1);
-                //         session_write_close();
-                //         // for ($i=0; $i < $kitchen_printer_no; $i++) { 
-                //             exec($batfile);
-                //         // }
-                //         session_start();
-                //         // unlink($qr_filename);
-                //         // unlink($filename);
-                //         unlink($batfile);
-                //     //     if(BEVERAGE_BARCODE_ENABLED && count($print_bar_str) > 2){
-                //     //         $this->do_print_bar_receipt_v1($print_bar_str,BILLING_PRINTER,$printer['no']);  
-                //     //     }else{
-                //     //         $this->do_print_os($print_str,BILLING_PRINTER,$printer['no']);  
-                //     //     }
-
-                //     // }
-                    
-                            
-                // }
-                // echo "<pre>".$print_str."</pre>";
-           
-
-            if($this->input->post('isjson') == 1){
-                echo json_encode(array('js_rcps'=>$js_rcps));
-            }else{
-                return array('js_rcps'=>$js_rcps);
-            }
-            
-        }        
+    }        
 }
