@@ -26986,7 +26986,7 @@ class Cashier extends Reads {
                         if(!$multi_line && count($menu_list) == count($has_menu)){
 
                             foreach($wagon as $line=>$cart){ 
-                                if($cart['menu_id'] == $pr->menu_id && $cart['qty'] > $menu_list[$cart['menu_id']]){
+                                if($cart['menu_id'] == $pr->menu_id && isset($menu_list[$cart['menu_id']]) && $cart['qty'] > $menu_list[$cart['menu_id']]){
                                     // echo json_encode(array('id'=>1,'items'=> $wagon[0],'ref_line'=>0,'ref_qty'=>1));exit; 
                                     $wagon[$line]['qty']= $cart['qty']-$pr->qty;
 
@@ -27015,7 +27015,20 @@ class Cashier extends Reads {
                                     echo json_encode(array('id'=>$id,'items'=> $wagon[$id],'ref_line'=>$line,'ref_qty'=>$wagon[$line]['qty']));
 
                                     return false;
-                                }
+                                }else if(in_array($pr->sched_id, $schs) && $pr->menu_id == $wagon[$trans_id]['menu_id']){
+                               
+                                    $wagon[$trans_id]['cost'] = $pr->menu_amount;
+                                    $wagon[$trans_id]['is_promo'] = 1;
+                                    $wagon[$trans_id]['promo_type'] = $pr->promo_option;
+                                    $wagon[$trans_id]['pf_id'] = $pr->pf_id;
+
+                                    $this->session->set_userData($name,$wagon);
+
+                                    $single_promo = true;
+
+                                    echo json_encode(array('id'=>$trans_id,'price'=>$pr->menu_amount));
+                                    return false;
+                                }  
                             }                            
                         }else{
                              $menu_list = array();

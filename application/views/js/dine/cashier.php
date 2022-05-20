@@ -3437,6 +3437,15 @@ $(document).ready(function(){
 												
 				// 								transTotal();
 				// 							});
+				$.post(baseUrl+'cashier/delete_promo/'+id,function(promo_data){
+						if(promo_data != -1){
+							$.post(baseUrl+'wagon/delete_to_wagon/trans_cart/'+promo_data,function(data){
+								$('#trans-row-'+promo_data).remove();
+							},'json');	
+
+							addTransPromo();														
+						}
+				});
 
 				transTotal();
 			},'json');
@@ -10717,7 +10726,7 @@ $(document).ready(function(){
 		}
 		function deletePayment(pay_id,sales_id){
 			$('#void-payment-btn-'+pay_id).click(function(){
-				$.post(baseUrl+'cashier_gift_card/delete_payment/'+pay_id+'/'+sales_id,function(data){
+				$.post(baseUrl+'cashier/delete_payment/'+pay_id+'/'+sales_id,function(data){
 					console.log(data);
 					if(data.error == 'paid'){
   						rMsg('Error! Transaction already paid.','error');
@@ -10736,7 +10745,7 @@ $(document).ready(function(){
 		}
 		function loadTransactions(){
 			var id = $('#settle').attr('sales');
-			$.post(baseUrl+'cashier_gift_card/settle_transactions/'+id,function(data){
+			$.post(baseUrl+'cashier/settle_transactions/'+id,function(data){
 				$('.transactions-payment-div .body').html(data.code);
 				$('.transactions-payment-div .body').perfectScrollbar({suppressScrollX: true});
 				$.each(data.ids,function(key,pay_id){
