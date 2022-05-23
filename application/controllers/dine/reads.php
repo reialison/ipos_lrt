@@ -8247,6 +8247,7 @@ class Reads extends Prints {
         public function miaa_xfile_regen($zread_id=null,$regen=false,$sel_date){
             // echo $zread_id; die();
             $sales_type_total = $this->session->userData('sales_type_total');
+            // echo '<pre>',print_r($sales_type_total),'</pre>'; die();
             $error = 0;
             $error_msg = null;
             $mall_db        = $this->site_model->get_tbl('miaa');
@@ -9083,35 +9084,65 @@ class Reads extends Prints {
                                                 if($disc->no_tax == 1){
                                                     $divi_less = round($divi / 1.12,2);
                                                     $lv = $divi - $divi_less;
-                                                }
 
-                                                $no_persons = count($sales_discs);
-                                                $discount = round((($rate / 100) * $divi_less) * $no_persons,2);
-                                                $less_vat = $lv * $no_persons;
 
-                                                //pang balance
-                                                $total_disc_per_menu += $discount;
+                                                    $no_persons = count($sales_discs);
+                                                    $discount = round((($rate / 100) * $divi_less) * $no_persons,2);
+                                                    $less_vat = $lv * $no_persons;
 
-                                                if($menu_count == $mctr){
-                                                    if($total_disc_per_menu != $total_disc_sid){
-                                                        $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
-                                                        // echo $discount." ----- ".$d_variance."<br>";
-                                                        $discount = $discount + $d_variance;
-                                                        // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
-                                                        // echo $d_variance;
+                                                    //pang balance
+                                                    $total_disc_per_menu += $discount;
+
+                                                    if($menu_count == $mctr){
+                                                        if($total_disc_per_menu != $total_disc_sid){
+                                                            $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                            // echo $discount." ----- ".$d_variance."<br>";
+                                                            $discount = $discount + $d_variance;
+                                                            // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                            // echo $d_variance;
+                                                        }
                                                     }
+
+                                                    //for vat
+                                                    $vno_person = $guest - $no_persons;
+                                                    $tl = $divi * $vno_person;
+                                                    $vat1 = $tl / 1.12;
+                                                    $vatss = ($vat1 * 0.12);
+
+                                                    $vat = $vatss;
+
+                                                    $tax_sales = $divi * $vno_person;
+                                                    $ntax_sales = ($divi * $no_persons) - $discount - $less_vat;
+                                                }else{
+                                                    $no_persons = count($sales_discs);
+                                                    $total = $gross;
+                                                    if($disc->no_tax == 1){
+                                                        $total = ($gross / 1.12);
+                                                    }
+
+                                                    $discount = (($rate / 100) * $total) * $no_persons;
+
+                                                    //pang balance
+                                                    $total_disc_per_menu += $discount;
+
+                                                    if($menu_count == $mctr){
+                                                        if($total_disc_per_menu != $total_disc_sid){
+                                                            $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                            // echo $discount." ----- ".$d_variance."<br>";
+                                                            $discount = $discount + $d_variance;
+                                                            // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                            // echo $d_variance;
+                                                        }
+                                                    }
+
+
+                                                    $vat = (($gross - $discount) / 1.12) * 0.12;
+                                                    $tax_sales = $gross - $discount;
+                                                    $ntax_sales = 0;
+
+                                                    // echo $disc->sales_id."-----".$ntax_sales;
                                                 }
 
-                                                //for vat
-                                                $vno_person = $guest - $no_persons;
-                                                $tl = $divi * $vno_person;
-                                                $vat1 = $tl / 1.12;
-                                                $vatss = ($vat1 * 0.12);
-
-                                                $vat = $vatss;
-
-                                                $tax_sales = $divi * $vno_person;
-                                                $ntax_sales = ($divi * $no_persons) - $discount - $less_vat;
 
                                             }else{
                                                 // $no_persons = count($sales_discs);
@@ -9423,37 +9454,67 @@ class Reads extends Prints {
                                             $divi_less = $divi;
                                             $lv = 0;
                                             if($disc->no_tax == 1){
-                                                $divi_less = ($divi / 1.12);
+                                                $divi_less = round($divi / 1.12,2);
                                                 $lv = $divi - $divi_less;
-                                            }
 
-                                            $no_persons = count($sales_discs);
-                                            $discount = round((($rate / 100) * $divi_less) * $no_persons,2);
-                                            $less_vat = $lv * $no_persons;
 
-                                            //pang balance
-                                            $total_disc_per_menu += $discount;
+                                                $no_persons = count($sales_discs);
+                                                $discount = round((($rate / 100) * $divi_less) * $no_persons,2);
+                                                $less_vat = $lv * $no_persons;
 
-                                            if($menu_count == $mctr){
-                                                if($total_disc_per_menu != $total_disc_sid){
-                                                    $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
-                                                    // echo $discount." ----- ".$d_variance."<br>";
-                                                    $discount = $discount + $d_variance;
-                                                    // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
-                                                    // echo $d_variance;
+                                                //pang balance
+                                                $total_disc_per_menu += $discount;
+
+                                                if($menu_count == $mctr){
+                                                    if($total_disc_per_menu != $total_disc_sid){
+                                                        $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                        // echo $discount." ----- ".$d_variance."<br>";
+                                                        $discount = $discount + $d_variance;
+                                                        // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                        // echo $d_variance;
+                                                    }
                                                 }
+
+                                                //for vat
+                                                $vno_person = $guest - $no_persons;
+                                                $tl = $divi * $vno_person;
+                                                $vat1 = $tl / 1.12;
+                                                $vatss = ($vat1 * 0.12);
+
+                                                $vat = $vatss;
+
+                                                $tax_sales = $divi * $vno_person;
+                                                $ntax_sales = ($divi * $no_persons) - $discount - $less_vat;
+                                            }else{
+                                                $no_persons = count($sales_discs);
+                                                $total = $gross;
+                                                if($disc->no_tax == 1){
+                                                    $total = ($gross / 1.12);
+                                                }
+
+                                                $discount = (($rate / 100) * $total) * $no_persons;
+
+                                                //pang balance
+                                                $total_disc_per_menu += $discount;
+
+                                                if($menu_count == $mctr){
+                                                    if($total_disc_per_menu != $total_disc_sid){
+                                                        $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                        // echo $discount." ----- ".$d_variance."<br>";
+                                                        $discount = $discount + $d_variance;
+                                                        // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                        // echo $d_variance;
+                                                    }
+                                                }
+
+
+                                                $vat = (($gross - $discount) / 1.12) * 0.12;
+                                                $tax_sales = $gross - $discount;
+                                                $ntax_sales = 0;
+
+                                                // echo $disc->sales_id."-----".$ntax_sales;
                                             }
 
-                                            //for vat
-                                            $vno_person = $guest - $no_persons;
-                                            $tl = $divi * $vno_person;
-                                            $vat1 = $tl / 1.12;
-                                            $vatss = ($vat1 * 0.12);
-
-                                            $vat = $vatss;
-
-                                            $tax_sales = $divi * $vno_person;
-                                            $ntax_sales = ($divi * $no_persons) - $discount - $less_vat;
 
                                         }else{
                                             // $no_persons = count($sales_discs);
@@ -9983,35 +10044,65 @@ class Reads extends Prints {
                                                     if($disc->no_tax == 1){
                                                         $divi_less = round($divi / 1.12,2);
                                                         $lv = $divi - $divi_less;
-                                                    }
 
-                                                    $no_persons = count($sales_discs);
-                                                    $discount = round((($rate / 100) * $divi_less) * $no_persons,2);
-                                                    $less_vat = $lv * $no_persons;
 
-                                                    //pang balance
-                                                    $total_disc_per_menu += $discount;
+                                                        $no_persons = count($sales_discs);
+                                                        $discount = round((($rate / 100) * $divi_less) * $no_persons,2);
+                                                        $less_vat = $lv * $no_persons;
 
-                                                    if($menu_count == $mctr){
-                                                        if($total_disc_per_menu != $total_disc_sid){
-                                                            $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
-                                                            // echo $discount." ----- ".$d_variance."<br>";
-                                                            $discount = $discount + $d_variance;
-                                                            // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
-                                                            // echo $d_variance;
+                                                        //pang balance
+                                                        $total_disc_per_menu += $discount;
+
+                                                        if($menu_count == $mctr){
+                                                            if($total_disc_per_menu != $total_disc_sid){
+                                                                $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                                // echo $discount." ----- ".$d_variance."<br>";
+                                                                $discount = $discount + $d_variance;
+                                                                // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                                // echo $d_variance;
+                                                            }
                                                         }
+
+                                                        //for vat
+                                                        $vno_person = $guest - $no_persons;
+                                                        $tl = $divi * $vno_person;
+                                                        $vat1 = $tl / 1.12;
+                                                        $vatss = ($vat1 * 0.12);
+
+                                                        $vat = $vatss;
+
+                                                        $tax_sales = $divi * $vno_person;
+                                                        $ntax_sales = ($divi * $no_persons) - $discount - $less_vat;
+                                                    }else{
+                                                        $no_persons = count($sales_discs);
+                                                        $total = $gross;
+                                                        if($disc->no_tax == 1){
+                                                            $total = ($gross / 1.12);
+                                                        }
+
+                                                        $discount = (($rate / 100) * $total) * $no_persons;
+
+                                                        //pang balance
+                                                        $total_disc_per_menu += $discount;
+
+                                                        if($menu_count == $mctr){
+                                                            if($total_disc_per_menu != $total_disc_sid){
+                                                                $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                                // echo $discount." ----- ".$d_variance."<br>";
+                                                                $discount = $discount + $d_variance;
+                                                                // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                                // echo $d_variance;
+                                                            }
+                                                        }
+
+
+                                                        $vat = (($gross - $discount) / 1.12) * 0.12;
+                                                        $tax_sales = $gross - $discount;
+                                                        $ntax_sales = 0;
+
+                                                        // echo $disc->sales_id."-----".$ntax_sales;
                                                     }
 
-                                                    //for vat
-                                                    $vno_person = $guest - $no_persons;
-                                                    $tl = $divi * $vno_person;
-                                                    $vat1 = $tl / 1.12;
-                                                    $vatss = ($vat1 * 0.12);
-
-                                                    $vat = $vatss;
-
-                                                    $tax_sales = $divi * $vno_person;
-                                                    $ntax_sales = ($divi * $no_persons) - $discount - $less_vat;
 
                                                 }else{
                                                     // $no_persons = count($sales_discs);
@@ -10122,7 +10213,19 @@ class Reads extends Prints {
                                     }
 
 
+                                    // $tnet = numInt($gross + $charges - $vat - $discount - $less_vat);
+                                    if($val->inactive != 1){
+                                        if(isset($pertype_total[$cat_type])){
+                                            $row = $pertype_total[$cat_type];
+                                            $row['tamount'] += $to_pay;
+                                            $pertype_total[$cat_type] = $row;
+                                        }else{
+                                            $pertype_total[$cat_type] = array('tamount'=>$to_pay);
+                                        }
+                                    }
 
+                                    // echo $tnet;
+                                    // echo "<pre>",print_r($pertype_total),"</pre>";
 
 
                                     //1 - 6
@@ -10154,14 +10257,6 @@ class Reads extends Prints {
                                     //17
                                     $print_str = commar($print_str,numInt($ntax_sales));
                                     //18
-                                    $tnet = numInt($gross + $charges - $vat - $discount - $less_vat);
-                                    if(isset($pertype_total[$cat_type])){
-                                        $row = $pertype_total[$cat_type];
-                                        $row['tamount'] += $tnet;
-                                        $pertype_total[$cat_type] = $row;
-                                    }else{
-                                        $pertype_total[$cat_type] = array('tamount'=>$tnet);
-                                    }
                                     $print_str = commar($print_str,numInt($gross + $charges - $vat - $discount - $less_vat));
                                     //19
                                     if($menu_count == $mctr){
@@ -10331,37 +10426,67 @@ class Reads extends Prints {
                                                 $divi_less = $divi;
                                                 $lv = 0;
                                                 if($disc->no_tax == 1){
-                                                    $divi_less = ($divi / 1.12);
+                                                    $divi_less = round($divi / 1.12,2);
                                                     $lv = $divi - $divi_less;
-                                                }
 
-                                                $no_persons = count($sales_discs);
-                                                $discount = round((($rate / 100) * $divi_less) * $no_persons,2);
-                                                $less_vat = $lv * $no_persons;
 
-                                                //pang balance
-                                                $total_disc_per_menu += $discount;
+                                                    $no_persons = count($sales_discs);
+                                                    $discount = round((($rate / 100) * $divi_less) * $no_persons,2);
+                                                    $less_vat = $lv * $no_persons;
 
-                                                if($menu_count == $mctr){
-                                                    if($total_disc_per_menu != $total_disc_sid){
-                                                        $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
-                                                        // echo $discount." ----- ".$d_variance."<br>";
-                                                        $discount = $discount + $d_variance;
-                                                        // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
-                                                        // echo $d_variance;
+                                                    //pang balance
+                                                    $total_disc_per_menu += $discount;
+
+                                                    if($menu_count == $mctr){
+                                                        if($total_disc_per_menu != $total_disc_sid){
+                                                            $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                            // echo $discount." ----- ".$d_variance."<br>";
+                                                            $discount = $discount + $d_variance;
+                                                            // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                            // echo $d_variance;
+                                                        }
                                                     }
+
+                                                    //for vat
+                                                    $vno_person = $guest - $no_persons;
+                                                    $tl = $divi * $vno_person;
+                                                    $vat1 = $tl / 1.12;
+                                                    $vatss = ($vat1 * 0.12);
+
+                                                    $vat = $vatss;
+
+                                                    $tax_sales = $divi * $vno_person;
+                                                    $ntax_sales = ($divi * $no_persons) - $discount - $less_vat;
+                                                }else{
+                                                    $no_persons = count($sales_discs);
+                                                    $total = $gross;
+                                                    if($disc->no_tax == 1){
+                                                        $total = ($gross / 1.12);
+                                                    }
+
+                                                    $discount = (($rate / 100) * $total) * $no_persons;
+
+                                                    //pang balance
+                                                    $total_disc_per_menu += $discount;
+
+                                                    if($menu_count == $mctr){
+                                                        if($total_disc_per_menu != $total_disc_sid){
+                                                            $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                            // echo $discount." ----- ".$d_variance."<br>";
+                                                            $discount = $discount + $d_variance;
+                                                            // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                            // echo $d_variance;
+                                                        }
+                                                    }
+
+
+                                                    $vat = (($gross - $discount) / 1.12) * 0.12;
+                                                    $tax_sales = $gross - $discount;
+                                                    $ntax_sales = 0;
+
+                                                    // echo $disc->sales_id."-----".$ntax_sales;
                                                 }
 
-                                                //for vat
-                                                $vno_person = $guest - $no_persons;
-                                                $tl = $divi * $vno_person;
-                                                $vat1 = $tl / 1.12;
-                                                $vatss = ($vat1 * 0.12);
-
-                                                $vat = $vatss;
-
-                                                $tax_sales = $divi * $vno_person;
-                                                $ntax_sales = ($divi * $no_persons) - $discount - $less_vat;
 
                                             }else{
                                                 // $no_persons = count($sales_discs);
