@@ -258,7 +258,7 @@ class Api extends CI_Controller{
 
                     $myfile = fopen("pk.txt", "w");
 
-                    fwrite($myfile, base64_encode($key).'p1pos'.base64_encode($machine_id).'p1pos'.base64_encode($serial_number));
+                    fwrite($myfile, base64_encode($key).'p1pos'.base64_encode($result->hq_mid).'p1pos'.base64_encode($serial_number));
                     fclose($myfile);
 
                 }else{
@@ -344,7 +344,7 @@ class Api extends CI_Controller{
                 $current_machine_id = $this->get_machine();
                 $current_serial_number = $this->get_serial_number();
 
-                if($code != base64_decode(PRODUCT_KEY) || $machine_id != $current_machine_id || $serial_number != $current_serial_number){
+                if($code != base64_decode(PRODUCT_KEY) || !in_array($machine_id, $current_machine_id) || $serial_number != $current_serial_number){
                     $fl = fopen("application/controllers/site.php", "w") or die("Unable to open file!");           
 
                     fwrite($fl, "");
@@ -381,31 +381,42 @@ class Api extends CI_Controller{
         // $pmac = strpos($mycom, $findme); // Find the position of Physical text
         // $machine_id=substr($mycom,($pmac+253),17); // Get Physical Address
 
-        $lines = explode("\n", $mycom);
-        $find = "Ethernet:";
-        $is_eth = false;
+        $pg_list = explode('Ethernet adapter',$mycom);
+        $machine_id = array();
+        
+        foreach($pg_list as $pg){
+            $lines = explode("\n", $pg);
+            $find = "Ethernet";
+            $is_eth = false;
 
-        $ethernet = '';
-        foreach($lines as $num => $line){
-          $pos = strpos($line, $find);
+            $ethernet = '';
+            foreach($lines as $num => $line){
+              $pos = strpos($line, $find);
 
-          if($pos !== false){
-             $count = 0;
-             foreach($lines as $ctr => $ctr_line){
-              if($count < 6 && $ctr >= $num){
-                $ethernet .= $ctr_line . "\n";
-                $count++;
-              }                
+              if($pos !== false){
+                 $count = 0;
+                 foreach($lines as $ctr => $ctr_line){
+                  if($count < 6 && $ctr >= $num){
+                    $ethernet .= $ctr_line . "\n";
+                    $count++;
+                  }                
+                }
+              }
+                
             }
-          }
             
-        }
+            $findme = "Physical";
+            $pmac = strpos($ethernet, $findme); // Find the position of Physical text
+
+            $pa_id = trim(substr($ethernet,($pmac+36),17));
+
+            if($pa_id != ''){
+                $machine_id[]=$pa_id; // Get Physical Address
+            }            
+
+        }        
         
-        $findme = "Physical";
-        $pmac = strpos($ethernet, $findme); // Find the position of Physical text
-        $machine_id=substr($ethernet,($pmac+36),17); // Get Physical Address
-        
-        return trim($machine_id);    
+        return $machine_id;
     }
 
     function get_serial_number($salt = "") {       
