@@ -6287,10 +6287,10 @@ class Cashier extends Reads {
                         $cost = ($cost / $rate);
                         // $zr = ($cost * $rate);
                         // $cost = $cost-$zr;
-                        $zero_rated += $trans['qty'] * $cost + $mod_cost + $submod_cost;
+                        $zero_rated += $trans['qty'] * ($cost + $mod_cost + $submod_cost);
                         $zero_r = 1;
                     }
-                    $total += $trans['qty'] * $cost + $mod_cost + $submod_cost;
+                    $total += $trans['qty'] * ($cost + $mod_cost + $submod_cost);
                     if(isset($trans['nocharge']) && $trans['nocharge'] != 0){
                         // $total_no_charge += $trans['qty'] * $cost;
                         // echo 'pumasok';
@@ -6303,7 +6303,7 @@ class Cashier extends Reads {
                     $men = $this->site_model->get_details($where,'menus');
 
                     if(isset($men[0]->alcohol) &&$men[0]->alcohol == 1){
-                        $alcohol += $trans['qty'] * $cost+ $mod_cost + $submod_cost;
+                        $alcohol += $trans['qty'] * ($cost+ $mod_cost + $submod_cost);
                     }
 
 
