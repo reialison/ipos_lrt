@@ -7350,6 +7350,11 @@ $(document).ready(function(){
 							if(promo_data.ref_line != undefined){ 
 								$('#trans-row-'+promo_data.ref_line+' .qty').text(promo_data.ref_qty);
 								makeItemRow(promo_data.id,0,promo_data.items,'promo',is_takeout,'');
+
+								if(promo_data.name != undefined){
+									$('#trans-row-'+promo_data.ref_line+' .name').text(promo_data.ref_qty);
+									$('#trans-row-'+promo_data.ref_line+' .cost').text(promo_data.price);
+								}
 							}else if(promo_data.price){
 								$('#trans-row-'+data.id+' .cost').text(promo_data.price);
 								$('#trans-row-'+data.id).addClass('promo');
