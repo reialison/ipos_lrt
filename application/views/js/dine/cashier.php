@@ -3525,21 +3525,21 @@ $(document).ready(function(){
 					// 							transTotal();
 					// });
 
-					$.post(baseUrl+'cashier/promo_item_qty/'+id+'/'+$('#ttype').val(),function(promo_data){
-							// alert(id);
-							//  alert(promo_data.id);
-							if(promo_data.ref_line != undefined){ 
-								$('#trans-row-'+promo_data.ref_line+' .qty').text(promo_data.ref_qty);
-								makeItemRow(promo_data.id,0,promo_data.items,'promo',is_takeout,'');
-							}else if(promo_data.qty != undefined){
-								$('#trans-row-'+promo_data.id+' .qty').text(promo_data.qty);
-								$('#trans-row-'+promo_data.id).addClass('promo');
-							}else if(id != promo_data.id){  
-								makeItemRow(promo_data.id,promo_data.free_menu,promo_data.items,'promo',is_takeout,'');
-							}
+					// $.post(baseUrl+'cashier/promo_item_qty/'+id+'/'+$('#ttype').val(),function(promo_data){
+					// 		// alert(id);
+					// 		//  alert(promo_data.id);
+					// 		if(promo_data.ref_line != undefined){ 
+					// 			$('#trans-row-'+promo_data.ref_line+' .qty').text(promo_data.ref_qty);
+					// 			makeItemRow(promo_data.id,0,promo_data.items,'promo',is_takeout,'');
+					// 		}else if(promo_data.qty != undefined){
+					// 			$('#trans-row-'+promo_data.id+' .qty').text(promo_data.qty);
+					// 			$('#trans-row-'+promo_data.id).addClass('promo');
+					// 		}else if(id != promo_data.id){  
+					// 			makeItemRow(promo_data.id,promo_data.free_menu,promo_data.items,'promo',is_takeout,'');
+					// 		}
 							
-						},'json');
-					// addTransPromo();
+					// 	},'json');
+					addTransPromo();
 					
 					transTotal();
 					$('#times-qty').val('');
@@ -4328,6 +4328,13 @@ $(document).ready(function(){
 															if(promo_data != -1){
 																$.post(baseUrl+'wagon/delete_to_wagon/'+cart+'/'+promo_data,function(data){
 																	$('#trans-row-'+promo_data).remove();
+
+																	if(cart == 'trans_cart' && retail === false){
+																		$.post(baseUrl+'cashier/delete_trans_menu_modifier/'+promo_data,function(data){	
+																			$('.trans-sub-row[trans-id="'+promo_data+'"]').remove();
+																			$('.trans-subsub-row[trans-id="'+promo_data+'"]').remove();
+																		});
+																	}
 																},'json');	
 
 																addTransPromo();														
@@ -4452,9 +4459,16 @@ $(document).ready(function(){
 										if(promo_data != -1){
 											$.post(baseUrl+'wagon/delete_to_wagon/'+cart+'/'+promo_data,function(data){
 												$('#trans-row-'+promo_data).remove();
-											},'json');
 
-											addTransPromo();
+												if(cart == 'trans_cart' && retail === false){
+													$.post(baseUrl+'cashier/delete_trans_menu_modifier/'+promo_data,function(data){	
+														$('.trans-sub-row[trans-id="'+promo_data+'"]').remove();
+														$('.trans-subsub-row[trans-id="'+promo_data+'"]').remove();
+													});
+												}
+											},'json');	
+
+											addTransPromo();														
 										}
 								});
 							}
@@ -7339,36 +7353,10 @@ $(document).ready(function(){
 
 					var is_promo = false;
 
-					// addTransPromo();
+					addTransPromo();
 
 					// $.ajaxSetup({async: false});
-					$.post(baseUrl+'cashier/promo_item_qty/'+data.id+'/'+$('#ttype').val(),function(promo_data){
-							// makeItemRow(promo_data.id,menu_id,promo_data.items,null,is_takeout,charge_code);
-							// alert(JSON.stringify(promo_data));	
-							// alert(promo_data.price);								
-
-							if(promo_data.ref_line != undefined){ 
-								$('#trans-row-'+promo_data.ref_line+' .qty').text(promo_data.ref_qty);
-								makeItemRow(promo_data.id,0,promo_data.items,'promo',is_takeout,'');
-
-								if(promo_data.name != undefined){
-									$('#trans-row-'+promo_data.ref_line+' .name').text(promo_data.ref_qty);
-									$('#trans-row-'+promo_data.ref_line+' .cost').text(promo_data.price);
-								}
-							}else if(promo_data.price){
-								$('#trans-row-'+data.id+' .cost').text(promo_data.price);
-								$('#trans-row-'+data.id).addClass('promo');
-								is_promo = true;
-							}else if(id != promo_data.id){  
-								makeItemRow(promo_data.id,promo_data.free_menu,promo_data.items,'promo',is_takeout,charge_code);
-									
-								if(promo_data.sel_trans_id != undefined){
-									$('#trans-row-'+promo_data.sel_trans_id).click();
-								}
-							}
-							
-							transTotal();
-						},'json');
+					
 
 					// for popup qty
 
@@ -7470,7 +7458,7 @@ $(document).ready(function(){
 			// });
 			
 		}
-		function addTransPromo(){
+		function addTransPromo(is_takeout='',charge_code=''){
 			$('.sel-row').each(function(){
 				var ref_id = $(this).attr('ref');
 
@@ -7478,20 +7466,44 @@ $(document).ready(function(){
 					$.post(baseUrl+'cashier/promo_item_qty/'+ref_id+'/'+$('#ttype').val(),function(promo_data){
 						// alert(id);
 						//  alert(promo_data.id);
+						// if(promo_data.ref_line != undefined){ 
+						// 	$('#trans-row-'+promo_data.ref_line+' .qty').text(promo_data.ref_qty);
+						// 	makeItemRow(promo_data.id,0,promo_data.items,'promo',is_takeout,'');
+						// }else if(promo_data.qty != undefined){
+						// 	$('#trans-row-'+promo_data.id+' .qty').text(promo_data.qty);
+						// 	$('#trans-row-'+promo_data.id).addClass('promo');
+						// }else if(ref_id != promo_data.id){  
+						// 	makeItemRow(promo_data.id,promo_data.free_menu,promo_data.items,'promo',is_takeout,'');
+						// }
+
 						if(promo_data.ref_line != undefined){ 
 							$('#trans-row-'+promo_data.ref_line+' .qty').text(promo_data.ref_qty);
 							makeItemRow(promo_data.id,0,promo_data.items,'promo',is_takeout,'');
-						}else if(promo_data.qty != undefined){
-							$('#trans-row-'+promo_data.id+' .qty').text(promo_data.qty);
 							$('#trans-row-'+promo_data.id).addClass('promo');
-						}else if(ref_id != promo_data.id){  
-							makeItemRow(promo_data.id,promo_data.free_menu,promo_data.items,'promo',is_takeout,'');
+							if(promo_data.price != undefined){
+								$('#trans-row-'+ref_id+' .price').text(promo_data.price);
+								$('#trans-row-'+ref_id+' .cost').text(promo_data.cost);
+							}
+						}else if(promo_data.price != undefined){
+							$('#trans-row-'+promo_data.id+' .cost').text(promo_data.cost);
+							$('#trans-row-'+promo_data.id).addClass('promo');
+							is_promo = true;
+						}else if(ref_id != promo_data.id){
+							if($('#trans-row-'+promo_data.id).length == 0){
+								makeItemRow(promo_data.id,promo_data.free_menu,promo_data.items,'promo',is_takeout,charge_code);
+								$('#trans-row-'+promo_data.id).addClass('promo');	
+								if(promo_data.sel_trans_id != undefined){
+									$('#trans-row-'+promo_data.sel_trans_id).click();
+								}
+							}							
 						}
 						
 					},'json');
 				}
 				
 			});
+
+			transTotal();
 
 		}
 		function addTransCart_price(menu_id,opt,menu_price,btn){
