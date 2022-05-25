@@ -7498,14 +7498,14 @@ $(document).ready(function(){
 									}
 								}							
 							}
+
+							transTotal();
 							
 						},'json');
 					}
 				}, 3000);				
 				
-			});
-
-			transTotal();
+			});			
 
 		}
 		function addTransCart_price(menu_id,opt,menu_price,btn){
