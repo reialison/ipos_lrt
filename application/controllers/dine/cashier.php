@@ -26833,7 +26833,17 @@ class Cashier extends Reads {
             echo json_encode(array("error"=>null,"discounted_amt"=>$discount .' set'));
         }
 
-        function promo_item_qty($trans_id=-1,$ttype=''){           
+        function promo_item_qty(){
+            $name  = 'trans_cart';
+
+            $wagon = $this->session->userData($name);
+
+            foreach($wagon as $i=>$each){
+                $this->check_promo($i);
+            }
+        }
+
+        function check_promo($trans_id=-1,$ttype=''){           
             $this->load->model('app/Pos_app');
             
             $name  = 'trans_cart';
