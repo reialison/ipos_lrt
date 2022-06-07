@@ -7868,12 +7868,14 @@ $(document).ready(function(){
 			}
 			// $('<span/>').attr('class','name').html(namer).appendTo('#trans-row-'+id);
 			// $('<span/>').attr('class','cost').text(opt.cost).css('margin-right','10px').appendTo('#trans-row-'+id);
-			if(opt.qty > 1){
+			if(opt.qty != 1){
 				cost_total = opt.cost * opt.qty;
 				if(total_disc != 0){
 					cost_total = cost_total - total_disc;
-					cost_total = cost_total.toFixed(2);
+					cost_total= parseFloat(cost_total).toFixed(2);
 				}
+				// cost_total = Math.round(cost_total);
+				// cost_total = cost_total.toFixed(2);
 				$('<span/>').attr('class','name').html(namer).appendTo('#trans-row-'+id);
 				$('<span/>').attr('class','cost').text(cost_total).css('margin-right','10px').appendTo('#trans-row-'+id);
 				$('<span/>').attr('class','price').text('@'+opt.cost).css('margin-left','5px').appendTo('#trans-row-'+id);
@@ -7881,8 +7883,10 @@ $(document).ready(function(){
 				cost_total = opt.cost;
 				if(total_disc != 0){
 					cost_total = opt.cost - total_disc;
-					cost_total = cost_total.toFixed(2);
+					cost_total= parseFloat(cost_total).toFixed(2);
 				}
+				// cost_total = Math.round(cost_total,2);
+					// alert(cost_total);
 				$('<span/>').attr('class','name').html(namer).appendTo('#trans-row-'+id);
 				$('<span/>').attr('class','cost').text(cost_total).css('margin-right','10px').appendTo('#trans-row-'+id);
 				$('<span/>').attr('class','price').text('').css('margin-left','5px').appendTo('#trans-row-'+id);
