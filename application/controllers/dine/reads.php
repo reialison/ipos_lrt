@@ -8006,7 +8006,7 @@ class Reads extends Prints {
                         $str .= "10".$total_guest;
                     }
                     // $hrlyfile = "H".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).$eod_ctr.".".$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
-                    $hrlyfile = "H".substr($tenant_code,0,4).TERMINAL_NUMBER.$gts['ctr'].".".$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
+                    $hrlyfile = "H".substr($tenant_code,0,4).TERMINAL_NUMBER."1.".$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
                     if($see_server){
                         $this->write_file($file_path.$hrlyfile,$str);
                     }
@@ -8134,7 +8134,7 @@ class Reads extends Prints {
 
                         $actr++;
                     }
-                    $dailyfile = "S".substr($tenant_code,0,4).TERMINAL_NUMBER.$gts['ctr'].".".$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
+                    $dailyfile = "S".substr($tenant_code,0,4).TERMINAL_NUMBER."1.".$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
                     // $dailyfile = "S".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).$eod_ctr.".".$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
                     if($see_server){
                         $this->write_file($file_path.$dailyfile,$str);
@@ -8553,7 +8553,7 @@ class Reads extends Prints {
                         $str .= "09".$total_trans_cnt.$dlmtr;
                         $str .= "10".$total_guest;
                     }
-                    $hrlyfile = "H".substr($tenant_code,0,4).TERMINAL_NUMBER.$gts['ctr'].".".$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
+                    $hrlyfile = "H".substr($tenant_code,0,4).TERMINAL_NUMBER."1.".$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
                     // $hrlyfile = "H".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).$eod_ctr.".".$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
                     if($see_server){
                         $this->write_file($file_path.$hrlyfile,$str);
@@ -8681,7 +8681,7 @@ class Reads extends Prints {
                         $actr++;
                     }
 
-                    $dailyfile = "S".substr($tenant_code,0,4).TERMINAL_NUMBER.$gts['ctr'].".".$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
+                    $dailyfile = "S".substr($tenant_code,0,4).TERMINAL_NUMBER."1.".$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
                     // $dailyfile = "S".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).$eod_ctr.".".$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
                     if($see_server){
                         $this->write_file($file_path.$dailyfile,$str);

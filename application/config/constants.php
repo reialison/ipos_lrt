@@ -3,7 +3,7 @@
 # POS SETTINGS
 	define('LOADER',					false);#LOADING AT START OF PAGE
 
-	define('BRANCH_CODE',				'MAX_MAIN');
+	define('BRANCH_CODE',				'PasalubunganExpress');
 	define('RECEIPT_ADDITIONAL_HEADER_BELOW_BRANCH', 'MAX');
 
 
@@ -240,7 +240,7 @@ define('restograph_folder','restograph/');
 // define('LOCALSYNC',false); // first version of syncing commented out 
 
 define('AUTOLOCALSYNC',true); // flag for auto run on syncing db to db main sync via batch file
-define('MASTERMIGRATION',true); 
+define('MASTERMIGRATION',false); 
 define('MIGRATED_MAIN_DB','main');  // name of main database connection based on database.php
 define('MIGRATED_MASTER_DB','master'); // name of master database connection based on database.php
 define('CUSTOMIZED_POS','custom'); // name of customized pos database connection based on database.php
