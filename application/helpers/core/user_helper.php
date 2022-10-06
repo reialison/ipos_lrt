@@ -103,7 +103,7 @@ function makeUserAccessForm($role=array()){
 
 function userUploadForm(){
 	$CI =& get_instance();
-	$CI->make->H(3,'Warning! THIS WILL UPLOAD OR UPDATE USERS.',array('class'=>'label label-warning','style'=>'margin-bottom:50px;font-size:24px;'));
+	$CI->make->H(3,'Warning! THIS WILL REPLACE ALL THE USERS.',array('class'=>'label label-warning','style'=>'margin-bottom:50px;font-size:24px;'));
 	// $CI->make->sForm('menu/upload_excel_db',array('id'=>"upload-form",'enctype'=>'multipart/form-data'));
 	$CI->make->sForm('user/upload_excel_db',array('id'=>"upload-form",'enctype'=>'multipart/form-data'));
 		$CI->make->sDivRow(array('style'=>'margin-top:30px;'));

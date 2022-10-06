@@ -1378,7 +1378,7 @@ class Menu extends CI_Controller {
     }
 
     //upload encrypted file
-    public function upload_excel_db(){
+    public function upload_excel_db2(){
         $this->load->model('dine/main_model');
         $this->load->model('dine/manager_model');
         $this->load->model('dine/settings_model');
@@ -1634,6 +1634,266 @@ class Menu extends CI_Controller {
                     $this->site_model->add_tbl_batch('menus',$menus);
                     $this->main_model->add_trans_tbl_batch('menus',$menus);
                 #################################################################################################################################
+            }
+            unlink($temp['file']);
+        }
+        else{
+            site_alert($temp['error'],"error");
+        }
+        redirect(base_url()."menu", 'refresh'); 
+    }
+
+    public function upload_excel_db(){
+        $this->load->model('dine/main_model');
+        $this->load->model('dine/manager_model');
+        $this->load->model('dine/settings_model');
+
+        $temp = $this->upload_temp('menu_excel_temp');
+        if($temp['error'] == ""){
+            // echo 'dasda';die();
+            $now = $this->site_model->get_db_now('sql');
+            $this->load->library('excel');
+            $obj = PHPExcel_IOFactory::load($temp['file']);
+            $sheet = $obj->getActiveSheet()->toArray(null,true,true,true);
+            $count = count($sheet);
+            $start = 2;
+            $rows = array();
+            $menu_ids = array();
+            $menu_dup = false;
+            for($i=$start;$i<=$count;$i++){
+                if($sheet[$i]["A"] != ""){
+
+                    if(ENCRYPT_TXT_FILE){
+                    //uncomment below to if encrypted
+                        $line = explode(',', base64_decode($sheet[$i]["A"]));
+
+                        $sheet[$i]["A"] = isset($line[0]) ? $line[0] : '';
+                        $sheet[$i]["B"] = isset($line[1]) ? $line[1] : '';
+                        $sheet[$i]["C"] = isset($line[2]) ? $line[2] : '';
+                        $sheet[$i]["D"] = isset($line[3]) ? $line[3] : '';
+                        $sheet[$i]["E"] = isset($line[4]) ? $line[4] : '';
+                        $sheet[$i]["F"] = isset($line[5]) ? $line[5] : '';
+                        $sheet[$i]["G"] = isset($line[6]) ? $line[6] : '';
+
+                        $sheet[$i]["H"] = isset($line[7]) ? $line[7] : ''; //brand
+                        $sheet[$i]["I"] = isset($line[8]) ? $line[8] : ''; //miaa cat
+                        $sheet[$i]["J"] = isset($line[9]) ? $line[9] : ''; //no tax
+                        $sheet[$i]["K"] = isset($line[10]) ? $line[10] : ''; //uom
+                        $sheet[$i]["L"] = isset($line[11]) ? $line[11] : ''; //menu_id
+                        $sheet[$i]["M"] = isset($line[12]) ? $line[12] : ''; //cat_id
+                        $sheet[$i]["N"] = isset($line[13]) ? $line[13] : ''; //sub_cat_id
+                        $sheet[$i]["O"] = isset($line[14]) ? $line[14] : ''; //uom_id
+                    //comment end
+                    }
+
+                    $rows[] = array(
+                        "menu_code"         => $sheet[$i]["A"],
+                        "menu_barcode"      => $sheet[$i]["B"],
+                        "full_name"         => $sheet[$i]["C"],
+                        "short_name"        => $sheet[$i]["D"],
+                        "category"          => $sheet[$i]["E"],
+                        "menu_cat_id"       => 0,
+                        "subcategory"       => $sheet[$i]["F"],
+                        "menu_sub_cat_id"   => 0,
+                        "price"             => $sheet[$i]["G"],
+                        "brand"             => $sheet[$i]["H"],
+                        "miaa_cat"          => $sheet[$i]["I"],
+                        "no_tax"            => $sheet[$i]["J"],
+                        "uom"               => $sheet[$i]["K"],
+                        "menu_id"           => $sheet[$i]["L"],
+                        "menu_cat_id"       => $sheet[$i]["M"],
+                        "menu_sub_cat_id"   => $sheet[$i]["N"],
+                        "uom_id"            => $sheet[$i]["O"],
+                    );
+
+                    if(in_array($sheet[$i]["L"], $menu_ids)){
+                        $menu_dup = true;
+                    }else{
+                        $menu_ids[] = $sheet[$i]["L"];
+                    }
+                }
+            }
+            if(count($rows) > 0 && !$menu_dup){
+                $dflt_schedule = 0;                
+                #################################################################################################################################
+                ### INACTIVE ALL
+                    $this->db->query('truncate table `menu_categories`');
+                    $this->db->query('truncate table `menu_subcategories`');
+                    $this->db->query('truncate table `menus`');
+                    $this->db->query('truncate table `modifier_groups`');
+                    $this->db->query('truncate table `modifiers`');
+                    $this->db->query('truncate table `uom`');
+                    
+                    $this->load->library('Db_manager');
+                    $this->main_db = $this->db_manager->get_connection('main');
+
+                    $this->main_db->trans_start();
+                        $this->main_db->query('truncate table `menu_categories`');
+                        $this->main_db->query('truncate table `menu_subcategories`');
+                        $this->main_db->query('truncate table `menus`');
+                        $this->main_db->query('truncate table `modifier_groups`');
+                        $this->main_db->query('truncate table `modifiers`');
+                        $this->main_db->query('truncate table `uom`');
+                    $this->main_db->trans_complete();                    
+                #################################################################################################################################
+                ### INSERT CATEGORIES
+                    foreach ($rows as $ctr => $row) {
+                        $brand_code = $row['brand'];
+                        $brand = $this->site_model->get_tbl('brands',array('brand_code'=>strtoupper($brand_code))); 
+
+                        $brand_id = 1;
+                        if($brand){
+                            $brand_id = $brand[0]->id;
+                        }
+
+                        $cat_name = trim($row['category']);
+                        // $menu_category_exist = $this->site_model->get_tbl('menu_categories',array('menu_cat_name'=>strtoupper($cat_name),'brand'=>$brand_id,'inactive'=>0));
+                        $menu_category_exist = $this->site_model->get_tbl('menu_categories',array('menu_cat_id'=>$row['menu_cat_id'],'brand'=>$brand_id,'inactive'=>0));
+
+                        if(!$menu_category_exist && $cat_name !=''){                                                     
+
+                            // $dets = $this->manager_model->get_last_ids('menu_cat_id','menu_categories');
+                            // if($dets){
+                            //     $id = $dets[0]->menu_cat_id + 1;
+                            // }else{
+                            //     $id = 1;  
+                            // }
+
+                            $ins_categories = array(
+                                // 'menu_cat_id' => $id,
+                                'menu_cat_id'   => $row['menu_cat_id'],
+                                'menu_cat_name' => strtoupper($cat_name),
+                                'menu_sched_id' => $dflt_schedule,
+                                'reg_date'      => $now,
+                                'brand'         => $brand_id,
+                            );
+                            $cat_id = $this->menu_model->add_menu_categories($ins_categories);
+                            $this->main_model->add_trans_tbl('menu_categories',$ins_categories);
+
+                            if(CONSOLIDATOR){
+                                $terminals = $this->manager_model->get_terminals();
+
+                                foreach($terminals as $ctr => $vals){
+                                    // $this->settings_model->add_brands_termi($items,$vals->terminal_code);
+                                    $this->menu_model->add_menu_categories($ins_categories,$vals->terminal_code);
+                                }
+
+                            }
+                        }else{
+                            $cat_id = $menu_category_exist[0]->menu_cat_id;
+                        }
+
+                        $subcat_name = trim($row['subcategory']);
+                        // $submenu_category_exist = $this->site_model->get_tbl('menu_subcategories',array('menu_sub_cat_name'=>strtoupper($subcat_name),'inactive'=>0));
+                        $submenu_category_exist = $this->site_model->get_tbl('menu_subcategories',array('menu_sub_cat_id'=>$row['menu_sub_cat_id'],'inactive'=>0));
+
+                        if(!$submenu_category_exist && $subcat_name  != ''){
+                            // $dets = $this->manager_model->get_last_ids('menu_sub_cat_id','menu_subcategories');
+                            // if($dets){
+                            //     $id = $dets[0]->menu_sub_cat_id + 1;
+                            // }else{
+                            //     $id = 1;  
+                            // }
+
+                            $ins_subcategories = array(
+                                // 'menu_sub_cat_id' => $id,
+                                'menu_sub_cat_id' => $row['menu_sub_cat_id'],
+                                'menu_sub_cat_name' => strtoupper($subcat_name),
+                                // 'category_id' => $cat_id,
+                                'reg_date'          => $now,
+                            );
+
+                            $this->menu_model->add_menu_subcategories($ins_subcategories);
+                            $this->main_model->add_trans_tbl('menu_subcategories',$ins_subcategories);
+
+                            if(CONSOLIDATOR){
+                                $terminals = $this->manager_model->get_terminals();
+
+                                foreach($terminals as $ctr => $vals){
+                                    // $this->settings_model->add_brands_termi($items,$vals->terminal_code);
+                                    $this->menu_model->add_menu_subcategories($ins_subcategories,$vals->terminal_code);
+                                }
+
+                            }
+                        }
+
+                        $uom_code = trim($row['uom']);
+                        // $uom_exist = $this->site_model->get_tbl('uom',array('code'=>strtoupper($uom_code),'inactive'=>0));
+                        $uom_exist = $this->site_model->get_tbl('uom',array('id'=>$row['uom_id'],'inactive'=>0));
+                        if(!$uom_exist && $uom_code  != ''){
+                            // $dets = $this->manager_model->get_last_ids('menu_sub_cat_id','menu_subcategories');
+                            // if($dets){
+                            //     $id = $dets[0]->menu_sub_cat_id + 1;
+                            // }else{
+                            //     $id = 1;  
+                            // }
+
+                            $ins_uom = array(
+                                'id'   => $row['uom_id'],
+                                'code' => strtoupper($uom_code),
+                                'name' => strtoupper($uom_code),
+                                // 'reg_date'          => $now,
+                            );
+
+                            $this->settings_model->add_uom($ins_uom);
+                            $this->main_model->add_trans_tbl('uom',$ins_uom);
+
+                            if(CONSOLIDATOR){
+                                $terminals = $this->manager_model->get_terminals();
+
+                                foreach($terminals as $ctr => $vals){
+                                    // $this->settings_model->add_brands_termi($items,$vals->terminal_code);
+                                    $this->settings_model->add_uom($ins_uom,$vals->terminal_code);
+                                }
+
+                            }
+                        }
+                        
+                    }
+      
+                #################################################################################################################################                ### GET ALL CATEGORIES AND SUBCATEGORIES
+
+                    $result = $this->site_model->get_tbl('brands',array('inactive'=>0));
+                    $brands = array();
+                    foreach ($result as $res) {
+                        $brands[strtolower($res->brand_code)] = $res;
+                    }                    
+                #################################################################################################################################
+                ### INSERT MENUS
+                    $menus = array();    
+                    // $last_menu_id = $this->menu_model->get_last_menu_id();
+                    foreach ($rows as $ctr => $row) {
+                        if(!isset($menus[$row['short_name']])){                           
+                            $brand_id = 1;
+                            if(isset($brands[strtolower($row['brand'])])){
+                                $brand = $brands[strtolower($row['brand'])];
+                                $brand_id = $brand->id;
+                            }
+                            
+                            $menus[] = array(
+                                'menu_id'   => $row['menu_id'],
+                                'menu_code' => $row['menu_code'],
+                                'menu_barcode' => $row['menu_barcode'],
+                                'menu_name' => $row['short_name'],
+                                'menu_short_desc' => $row['full_name'],
+                                'menu_cat_id' => $row['menu_cat_id'],
+                                'menu_sub_cat_id' => $row['menu_sub_cat_id'],
+                                'menu_sched_id' => $dflt_schedule,
+                                'cost' => $row['price'],
+                                'reg_date' => $now,
+                                'brand'=>$brand_id,
+                                'miaa_cat'=>$row['miaa_cat'],
+                                'no_tax'=>$row['no_tax'],
+                                'uom_id'=>$row['uom_id']
+                            ); 
+                                                   
+                        }
+                    }
+                    $this->site_model->add_tbl_batch('menus',$menus);
+                    $this->main_model->add_trans_tbl_batch('menus',$menus);
+                #################################################################################################################################
+            }else{
+                site_alert('Upload failed. Duplicate menu id.',"error");
             }
             unlink($temp['file']);
         }

@@ -18206,4 +18206,1301 @@ class Reporting extends Prints {
         
     }
 
+    public function print_pdf_gc($sales_id=null,$asJson=true,$return_print_str=false,$add_reprinted=true,$splits=null,$include_footer=true,$no_prints=1,$order_slip_prints=0,$approved_by=null,$main_db=false,$openDrawer=false)
+    {
+        // include(dirname(__FILE__)."/cashier.php");
+        // Include the main TCPDF library (search for installation path).
+        require_once( APPPATH .'third_party/tcpdf.php');
+        $this->load->model("dine/setup_model");
+        date_default_timezone_set('Asia/Manila');
+
+        // create new PDF document
+        $pdf = new TCPDF("P", PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+
+        // set document information
+        $pdf->SetCreator(PDF_CREATOR);
+        $pdf->SetAuthor('iPOS');
+        $pdf->SetTitle('Gift Cheque Report');
+        $pdf->SetSubject('');
+        $pdf->SetKeywords('');
+
+        // set default header data
+        $setup = $this->setup_model->get_details(1);
+        $set = $setup[0];
+        // $pdf->SetHeaderData(PDF_HEADER_LOGO, PDF_HEADER_LOGO_WIDTH, $set->branch_name, $set->address);
+
+        // set header and footer fonts
+        $pdf->setHeaderFont(Array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
+        $pdf->setFooterFont(Array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
+
+        // set default monospaced font
+        $pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+
+        // set margins
+        $pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
+        $pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
+        $pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
+
+        // set auto page breaks
+        $pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
+
+        // set image scale factor
+        $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
+
+        // set some language-dependent strings (optional)
+        if (@file_exists(dirname(__FILE__).'/lang/eng.php')) {
+            require_once(dirname(__FILE__).'/lang/eng.php');
+            $pdf->setLanguageArray($l);
+        }
+
+        // ---------------------------------------------------------
+        $this->load->model('dine/setup_model');
+        // $this->load->database('main', TRUE);
+        $this->menu_model->db = $this->load->database('main', TRUE);
+        $this->load->model("dine/menu_model");
+        start_load(0);
+
+        // set font
+        $pdf->SetFont('helvetica', 'B', 11);
+
+        // add a page
+        $pdf->AddPage();
+
+        if($main_db){
+            $this->db = $this->load->database('main', TRUE);
+        }
+        $branch = $this->get_branch_details(false);
+        $return = $this->get_gc_order(false,$sales_id);
+        $order = $return['order'];
+        $details = $return['details'];
+        $payments = $return['payments'];
+        $pfields = $return['pfields'];
+        $discounts = $return['discounts'];
+        $local_tax = $return['local_tax'];
+        $charges = $return['charges'];
+        $tax = $return['taxes'];
+        $no_tax = $return['no_tax'];
+        $zero_rated = $return['zero_rated'];
+        $totalsss = $this->total_trans(false,$details,$discounts);
+        $discs = $totalsss['discs'];
+        $is_printed = $order['printed'];
+        $print_str = $print_str_part1 = $print_str_part2 = $print_str_part3 = "\r\n";
+        $is_billing = false;
+        $open_drawer = false;
+
+        $wrap = wordwrap($branch['name'],PAPER_WIDTH,"|#|");
+        $exp = explode("|#|", $wrap);
+
+        $pdf->SetFont('helvetica', '', 12);
+
+        foreach ($exp as $v) {
+            $pdf->Cell(50, 0, $v, '', 0, 'C'); 
+            $pdf->ln();  
+        }
+
+        $splt = 1;
+        $cancelled = 0;
+
+        $wrap = wordwrap($branch['address'],PAPER_WIDTH,"|#|");
+        $exp = explode("|#|", $wrap);
+        foreach ($exp as $v) {
+            $pdf->Cell(50, 0, $v, '', 0, 'C'); 
+            $pdf->ln();  
+        }   
+       
+        $pdf->ln();
+        $pdf->Cell(50, 0, date('M d, Y h:i A',strtotime($order['datetime'])), '', 0, 'R'); 
+        $pdf->ln();
+        $pdf->ln();
+
+        $pdf->Cell(50, 0, 'ACKNOWLEDGEMENT RECEIPT ', '', 0, 'L'); 
+        $pdf->ln();
+        $pdf->Cell(50, 0, "AR #: ".$order['ref']."", '', 0, 'L'); 
+        $pdf->ln();
+        $pdf->ln();
+
+        $pdf->Cell(50, 0, strtoupper($order['type']), '', 0, 'L'); 
+        $pdf->ln();
+        $pdf->ln();
+
+        $pdf->Cell(50, 0, "Register No:  ".$order['terminal_id'], '', 0, 'L'); 
+        $pdf->ln();
+        $pdf->Cell(50, 0, "Cashier Name:  ".ucwords($order['name']), '', 0, 'L'); 
+        $pdf->ln();
+        $pdf->Cell(50, 0, "_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _", '', 0, 'L'); 
+        $pdf->ln();
+
+        
+        $log_user = $this->session->userdata('user');
+
+        if($order['customer_id'] != ""){
+            if($main_db){
+                $this->db = $this->load->database('default', TRUE);
+            }
+            $this->load->model('dine/customers_model');
+            $customers = $this->customers_model->get_customer($order['customer_id']);
+            if(count($customers) > 0){
+                $cust = $customers[0];
+                $name = strtolower($cust->fname." ".$cust->mname." ".$cust->lname." ".$cust->suffix);
+                $pdf->Cell(50, 0, "Customer : ".ucwords($name), '', 0, 'R'); 
+                // $print_str .= "Customer : ".$this->append_chars(ucwords($name),"right",19," ")."\r\n";
+                $pdf->Cell(50, 0, "Customer : ".ucwords($cust->phone), '', 0, 'R'); 
+                    $pdf->ln();
+                    $address = strtolower($cust->street_no." ".$cust->street_address." ".$cust->city." ".$cust->region." ".$cust->zip);
+                    $pdf->Cell(50, 0, "Address  : ".ucwords($address), '', 0, 'R'); 
+                    $pdf->ln();
+                    // $print_str .= "Address  : ".$this->append_chars(ucwords($address),"right",19," ")."\r\n";
+                }
+            }
+
+            if($main_db){
+                $this->db = $this->load->database('main', TRUE);
+            }
+        // }
+        if($order['type'] == 'delivery' && $order['customer_id'] != ""){
+        
+        }
+        $pre_total = 0;
+            $post_details = array();
+            $post_details_nc = array();
+            $discs_items = array();
+            foreach ($discs as $disc) {
+                if(isset($disc['items']))
+                    $discs_items[$disc['type']] = $disc['items'];
+            }
+
+            // echo "<pre>",print_r($details),"</pre>";die();
+
+            $dscTxt = array();
+            foreach ($details as $line_id => $val) {
+                foreach ($discs_items as $type => $dissss) {
+                    if(in_array($line_id, $dissss)){
+                        $qty = 1;
+                        if(isset($dscTxt[$val['menu_id'].'_'.$val['price']][$type]['qty'])){
+                            $qty = $dscTxt[$val['menu_id'].'_'.$val['price']][$type]['qty'] + 1;
+                        }
+                        $dscTxt[$val['menu_id'].'_'.$val['price']][$type] = array('txt' => '#'.$type,'qty' => $qty);
+                    }
+                }
+            }
+
+            foreach ($details as $line_id => $val) {
+            if($val['nocharge'] == 1){
+                if (!isset($post_details_nc[$val['menu_id'].'_'.$val['price']])) {
+                    $dscsacs = array();
+                    if(isset($dscTxt[$val['menu_id'].'_'.$val['price']])){
+                        $dscsacs = $dscTxt[$val['menu_id'].'_'.$val['price']];
+                    }
+                    $remarksArr = array();
+                    if($val['remarks'] != '')
+                        $remarksArr = array($val['remarks']." x ".$val['qty']);
+                    $post_details_nc[$val['menu_id'].'_'.$val['price']] = array(
+                        'name' => $val['name'],
+                        'code' => $val['code'],
+                        'price' => $val['price'],
+                        'no_tax' => $val['no_tax'],
+                        'discount' => $val['discount'],
+                        'qty' => $val['qty'],
+                        'discounted'=>$dscsacs,
+                        'remarks'=>$remarksArr,
+                        'modifiers' => array()
+                    );
+                } else {
+                    if($val['remarks'] != "")
+                        $post_details_nc[$val['menu_id'].'_'.$val['price']]['remarks'][]= $val['remarks']." x ".$val['qty'];
+                    $post_details_nc[$val['menu_id'].'_'.$val['price']]['qty'] += $val['qty'];
+                }
+
+                if (empty($val['modifiers']))
+                    continue;
+
+                $modifs = $val['modifiers'];
+                $n_modifiers = $post_details_nc[$val['menu_id'].'_'.$val['price']]['modifiers'];
+                foreach ($modifs as $vv) {
+                    if (!isset($n_modifiers[$vv['id']])) {
+                        $n_modifiers[$vv['id']] = array(
+                            'name' => $vv['name'],
+                            'price' => $vv['price'],
+                            'qty' => $val['qty'],
+                            'discount' => $vv['discount']
+                        );
+                    } else {
+                        $n_modifiers[$vv['id']]['qty'] += $val['qty'];
+                    }
+                }
+                $post_details_nc[$val['menu_id'].'_'.$val['price']]['modifiers'] = $n_modifiers;
+            }else{
+                if (!isset($post_details[$val['menu_id'].'_'.$val['price']])) {
+                    $dscsacs = array();
+                    if(isset($dscTxt[$val['menu_id'].'_'.$val['price']])){
+                        $dscsacs = $dscTxt[$val['menu_id'].'_'.$val['price']];
+                    }
+                    $remarksArr = array();
+                    if($val['remarks'] != '')
+                        $remarksArr = array($val['remarks']." x ".$val['qty']);
+                    
+                    $post_details[$val['menu_id'].'_'.$val['price']] = array(
+                        'name' => $val['name'],
+                        'code' => $val['code'],
+                        'price' => $val['price'],
+                        'no_tax' => $val['no_tax'],
+                        'discount' => $val['discount'],
+                        'qty' => $val['qty'],
+                        'discounted'=>$dscsacs,
+                        'remarks'=>$remarksArr,
+                        'modifiers' => array()
+                    );
+                } else {
+                    if($val['remarks'] != "")
+                        $post_details[$val['menu_id'].'_'.$val['price']]['remarks'][]= $val['remarks']." x ".$val['qty'];
+                    $post_details[$val['menu_id'].'_'.$val['price']]['qty'] += $val['qty'];
+                }
+
+                if (empty($val['modifiers']))
+                    continue;
+
+                $modifs = $val['modifiers'];
+                $n_modifiers = $post_details[$val['menu_id'].'_'.$val['price']]['modifiers'];
+                foreach ($modifs as $vv) {
+                    if (!isset($n_modifiers[$vv['id']])) {
+                        $n_modifiers[$vv['id']] = array(
+                            'name' => $vv['name'],
+                            'price' => $vv['price'],
+                            'qty' => $val['qty'],
+                            'discount' => $vv['discount']
+                        );
+                    } else {
+                        $n_modifiers[$vv['id']]['qty'] += $val['qty'];
+                    }
+                }
+                $post_details[$val['menu_id'].'_'.$val['price']]['modifiers'] = $n_modifiers;
+            }
+
+        }
+        /* END NEW BLOCK */
+        $tot_qty = 0;
+        $pdf->Cell(20, 0, "QTY", '', 0, 'L'); 
+        $pdf->Cell(50, 0, "Item Description", '', 0, 'C'); 
+        $pdf->Cell(30, 0, "Amount", '', 0, 'R'); 
+        $pdf->ln();
+        $pdf->ln();
+
+        foreach ($post_details as $val) {
+            $tot_qty += $val['qty'];
+            // $print_str .= $this->append_chars($val['qty'] ."  " ,"right",PAPER_DET_COL_1," ");
+            $pdf->Cell(20, 0, $val['qty'], '', 0, 'L'); 
+
+            $len = strlen($val['name']);
+
+            if($val['qty'] == 1){
+                $lgth = 21;
+            }else{
+                $lgth = 16;
+            }
+
+            if($len > $lgth){
+                $arr2 = str_split($val['name'], $lgth);
+                $counter = 1;
+                foreach($arr2 as $k => $vv){
+                    if($counter == 1){
+                        if ($val['qty'] == 1) {
+                            // $pdf->Cell(20, 0, "", '', 0, 'L'); 
+                            $pdf->Cell(50, 0, substrwords($vv,100,""), '', 0, 'L'); 
+                            $pdf->Cell(30, 0, number_format($val['price'],2), '', 0, 'R'); 
+                            $pdf->ln();
+                        } else {
+                            // $pdf->Cell(20, 0, "", '', 0, 'L'); 
+                            $pdf->Cell(50, 0, substrwords($vv,100,""), '', 0, 'L'); 
+                            $pdf->Cell(30, 0, number_format($val['price'] * $val['qty'],2), '', 0, 'R'); 
+                            $pdf->ln();
+                        }
+                    }else{
+                        // if ($val['qty'] == 1) {
+                            // $pdf->Cell(20, 0, "", '', 0, 'L'); 
+                            $pdf->Cell(50, 0, substrwords($vv,100,""), '', 0, 'L'); 
+                            $pdf->Cell(30, 0, "", '', 0, 'R');
+                            $pdf->ln();
+                    }
+                    $counter++;
+                }
+                
+                if ($val['qty'] == 1) {
+                    $pre_total += $val['price'];
+                }else{
+                    $pre_total += $val['price'] * $val['qty'];
+                }
+            }else{
+                if ($val['qty'] == 1) {
+                    // $pdf->Cell(20, 0, "e", '', 0, 'L');
+                    $pdf->Cell(50, 0, substrwords($val['name'],100,""), '', 0, 'L');
+                    $pdf->Cell(30, 0, number_format($val['price'],2), '', 0, 'R');
+                     $pdf->ln();
+                    $pre_total += $val['price'];
+                } else {
+                    $pdf->Cell(20, 0, "", '', 0, 'L');
+                    $pdf->Cell(50, 0, substrwords($val['name'],100,""), '', 0, 'L');
+                    $pdf->Cell(30, 0, number_format($val['price'] * $val['qty'],2), '', 0, 'R');
+                     $pdf->ln();
+                    $pre_total += $val['price'] * $val['qty'];
+                }
+            }
+            if(count($val['discounted']) > 0){
+                foreach ($val['discounted'] as $dssstxt) {
+                  // $print_str .= "      ";
+                    // $pdf->Cell(20, 0, "", '', 0, 'R');
+                    $pdf->Cell(50, 0, "", '', 0, 'L');
+                    $pdf->Cell(30, 0, $dssstxt['txt']." x ".$dssstxt['qty'], '', 0, 'R');
+                     $pdf->ln();
+                }
+            }
+            if(isset($val['remarks']) && count($val['remarks']) > 0){
+                if(KERMIT){
+                    foreach ($val['remarks'] as $rmrktxt) {
+                        // $pdf->Cell(20, 0, " ", '', 0, 'R');
+                        $pdf->Cell(50, 0, "  * ", '', 0, 'L');
+                        $pdf->Cell(30, 0, ucwords($rmrktxt), '', 0, 'R');
+                         $pdf->ln();
+                    }
+                }
+            }
+
+            if (empty($val['modifiers']))
+                continue;
+
+            $modifs = $val['modifiers'];
+            foreach ($modifs as $vv) {
+                // $print_str .= "   * ".$vv['qty']." ";
+                $pdf->ln();
+                $pdf->Cell(20, 0, "", '', 0, 'L');
+                $pdf->Cell(5, 0, "*".$vv['qty']." ", '', 0, 'L');
+                if ($vv['qty'] == 1) {
+                    // $pdf->Cell(20, 0, "   ", '', 0, 'L');
+                    $pdf->Cell(45, 0, substrwords($vv['name'],100,""), '', 0, 'L');
+                    $pdf->Cell(30, 0, number_format($vv['price'],2), '', 0, 'R');
+                    $pre_total += $vv['price'];
+                } else {
+                    // $pdf->Cell(20, 0, "   ", '', 0, 'L');
+                    $pdf->Cell(45, 0, substrwords($vv['name'],100,""), '', 0, 'L');
+                    $pdf->Cell(30, 0, number_format($vv['price'] * $vv['qty'],2), '', 0, 'R');
+                    $pre_total += $vv['price'] * $vv['qty'];
+                }
+            }
+            
+
+        }
+
+        //for no charges
+        if($post_details_nc){
+            // $print_str .= "\r\n";
+            $pdf->ln();
+            $pdf->Cell(20, 0, TAKEOUTTEXT, '', 0, 'L');
+            $pdf->ln();
+            // $print_str .= PAPER_LINE."\r\n";
+            // $print_str .= "          ".TAKEOUTTEXT."\r\n";
+            // $print_str .= PAPER_LINE."\r\n";
+            foreach ($post_details_nc as $val) {
+                $tot_qty += $val['qty'];
+                $pdf->Cell(20, 0, $val['qty']." ", '', 0, 'L');
+                // $print_str .= $this->append_chars($val['qty']." ","right",PAPER_DET_COL_1," ");
+
+                $len = strlen($val['name']);
+
+                if($val['qty'] == 1){
+                    $lgth = 21;
+                }else{
+                    $lgth = 16;
+                }
+
+                if($len > $lgth){
+                    $arr2 = str_split($val['name'], $lgth);
+                    $counter = 1;
+                    foreach($arr2 as $k => $vv){
+                        if($counter == 1){
+                            if ($val['qty'] == 1) {
+                                 $pdf->Cell(50, 0, substrwords($vv,100,""), '', 0, 'L'); 
+                                 $pdf->Cell(30, 0, number_format($val['price'],2), '', 0, 'R'); 
+                                 $pdf->ln();
+                                // $print_str .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").
+                                    // $this->append_chars(number_format($val['price'],2),"left",PAPER_DET_COL_3," ")."\r\n";
+                            } else {
+                                $pdf->Cell(50, 0, substrwords($vv,100,"")." ".$val['price'], '', 0, 'L'); 
+                                $pdf->Cell(30, 0, number_format($val['price'] * $val['qty'],2), '', 0, 'R'); 
+                                $pdf->ln();
+                                // $print_str .= $this->append_chars(substrwords($vv,100,"")." ".$val['price'],"right",PAPER_DET_COL_2," ").
+                                    // $this->append_chars(number_format($val['price'] * $val['qty'],2),"left",PAPER_DET_COL_3," ")."\r\n";
+                            }
+                        }else{
+                            // if ($val['qty'] == 1) {
+                                 $pdf->Cell(20, 0, "", '', 0, 'L'); 
+                                 $pdf->Cell(50, 0, substrwords($vv,100,""), '', 0, 'L'); 
+                                 $pdf->Cell(30, 0, "", '', 0, 'L'); 
+                                 $pdf->ln();
+                                // $print_str .= $this->append_chars("","right",PAPER_DET_COL_1," ");
+                                // $print_str .= $this->append_chars(substrwords($vv,100,""),"right",PAPER_DET_COL_2," ").
+                                    // $this->append_chars("","left",PAPER_DET_COL_3," ")."\r\n";
+                            // } else {
+                                // $print_str .= $this->append_chars(substrwords($vv,100,"")." @ ".$val['price'],"right",PAPER_DET_COL_2," ").
+                                //     $this->append_chars("","left",PAPER_DET_COL_3," ")."\r\n";
+                            // }
+                        }
+                        $counter++;
+                    }
+                    
+                    if ($val['qty'] == 1) {
+                        $pre_total += $val['price'];
+                    }else{
+                        $pre_total += $val['price'] * $val['qty'];
+                    }
+                }else{
+                    if ($val['qty'] == 1) {
+                        $pdf->Cell(50, 0, substrwords($val['name'],100,""), '', 0, 'L'); 
+                        $pdf->Cell(30, 0, number_format($val['price'],2), '', 0, 'R'); 
+                        $pdf->ln();
+                        // $print_str .= $this->append_chars(substrwords($val['name'],100,""),"right",PAPER_DET_COL_2," ").
+                            // $this->append_chars(number_format($val['price'],2),"left",PAPER_DET_COL_3," ")."\r\n";
+                        $pre_total += $val['price'];
+                    } else {
+                        $pdf->Cell(50, 0, substrwords($val['name'],100,""), '', 0, 'L'); 
+                        $pdf->Cell(30, 0, number_format($val['price'] * $val['qty'],2), '', 0, 'R'); 
+                        $pdf->ln();
+                        // $print_str .= $this->append_chars(substrwords($val['name'],100,"")." ".$val['price'],"right",PAPER_DET_COL_2," ").
+                            // $this->append_chars(number_format($val['price'] * $val['qty'],2),"left",PAPER_DET_COL_3," ")."\r\n";
+                        $pre_total += $val['price'] * $val['qty'];
+                    }
+                }
+                if(count($val['discounted']) > 0){
+                    foreach ($val['discounted'] as $dssstxt) {
+                        $pdf->Cell(20, 0, "", '', 0, 'L'); 
+                        $pdf->Cell(50, 0, $dssstxt['txt']." x ".$dssstxt['qty'], '', 0, 'R'); 
+                        $pdf->ln();
+                      // $print_str .= "      ";
+                      // $print_str .= $this->append_chars($dssstxt['txt']." x ".$dssstxt['qty'],"right",PAPER_DET_COL_2," ")."\r\n";
+                    }
+                }
+                if(isset($val['remarks']) && count($val['remarks']) > 0){
+                    // foreach ($val['remarks'] as $rmrktxt) {
+                    //     $print_str .= "     * ";
+                    //     $print_str .= $this->append_chars(ucwords($rmrktxt),"right",PAPER_DET_COL_2," ")."\r\n";
+                    // }
+                }
+
+                if (empty($val['modifiers']))
+                    continue;
+
+                $modifs = $val['modifiers'];
+                foreach ($modifs as $vv) {
+                    $print_str .= "   * ".$vv['qty']." ";
+
+                    if ($vv['qty'] == 1) {
+                        $pdf->Cell(50, 0, substrwords($vv['name'],100,""), '', 0, 'L'); 
+                        $pdf->Cell(30, 0, number_format($vv['price'],2), '', 0, 'R'); 
+                        $pdf->ln();
+                        // $print_str .= $this->append_chars(substrwords($vv['name'],100,""),"right",PAPER_DET_SUBCOL," ")
+                            // .$this->append_chars(number_format($vv['price'],2),"left",PAPER_DET_COL_3," ")."\r\n";
+                        $pre_total += $vv['price'];
+                    } else {
+                        $pdf->Cell(50, 0, substrwords($vv['name'],100,""), '', 0, 'L'); 
+                        $pdf->Cell(30, 0, number_format($vv['price'] * $vv['qty'],2), '', 0, 'R'); 
+                        $pdf->ln();
+                        // $print_str .= $this->append_chars(substrwords($vv['name'],100,"")." ".$vv['price'],"right",PAPER_DET_SUBCOL," ")
+                            // .$this->append_chars(number_format($vv['price'] * $vv['qty'],2),"left",PAPER_DET_COL_3," ")."\r\n";
+                        $pre_total += $vv['price'] * $vv['qty'];
+                    }
+                }
+                
+
+
+                //DISCOUNT PALATANDAAN
+                // if(in_array($val[''], haystack))
+
+            }
+        }
+        $vat = 0;
+        if($tax > 0){
+            foreach ($tax as $tx) {
+               $vat += $tx['amount'];
+            }
+        }
+        $no_tax_amt = 0;
+        foreach ($no_tax as $k=>$v) {
+            $no_tax_amt += $v['amount'];
+        }
+
+        $zero_rated_amt = 0;
+        foreach ($zero_rated as $k=>$v) {
+            $zero_rated_amt += $v['amount'];
+        }
+        if($zero_rated_amt > 0){
+            $no_tax_amt = 0;
+        }
+
+
+        //start of not show for cancelled trans
+
+        if($cancelled == 0){
+
+            $total_discounts = 0;
+            $total_discounts_sm = 0;
+            foreach ($discounts as $dcs_ci => $dcs) {
+                foreach ($dcs['persons'] as $code => $dcp) {
+                    // $print_str .= $this->append_chars($dcs_ci,"right",28," ").$this->append_chars('P'.num($dcp['amount']),"left",10," ");
+                    // $print_str .= "\r\n".$this->append_chars($dcp['name'],"right",28," ");
+                    // $print_str .= "\r\n".$this->append_chars($dcp['code'],"right",28," ")."\r\n";
+                    // $print_str .= "\r\n".$this->append_chars(asterisks($dcp['code']),"right",28," ")."\r\n";
+                    $total_discounts += $dcp['amount'];
+                    $dcAmt = $dcp['amount'];
+                    // if(MALL_ENABLED && MALL == 'megamall'){
+                    //     if($dcs_ci == PWDDISC){
+                    //         $dcAmt = $dcAmt / 1.12;       
+                    //     }
+                    // }
+                    $total_discounts_sm += $dcAmt;
+                }
+            }
+            $total_discounts_non_vat = 0;
+            foreach ($discounts as $dcs_ci => $dcs) {
+               
+                foreach ($dcs['persons'] as $code => $dcp) {
+                    // $print_str .= $this->append_chars($dcs_ci,"right",28," ").$this->append_chars('P'.num($dcp['amount']),"left",10," ");
+                    // $print_str .= "\r\n".$this->append_chars($dcp['name'],"right",28," ");
+                    // $print_str .= "\r\n".$this->append_chars($dcp['code'],"right",28," ")."\r\n";
+                    // $print_str .= "\r\n".$this->append_chars(asterisks($dcp['code']),"right",28," ")."\r\n";
+                    if($dcs['no_tax'] == 1){
+                        $total_discounts_non_vat += $dcp['amount'];
+                    }
+                }
+            }
+            $total_charges = 0;
+            if(count($charges) > 0){
+                foreach ($charges as $charge_id => $opt) {
+                    $total_charges += $opt['total_amount'];
+                }
+            }
+            $local_tax_amt = 0;
+            if(count($local_tax) > 0){
+                foreach ($local_tax as $lt_id => $lt) {
+                    $local_tax_amt += $lt['amount'];
+                }
+            }
+            // echo num($total_charges + $local_tax_amt);
+
+            // echo '((('.$order['amount'].' - ('.$total_charges.' + '.$local_tax_amt.') - '.$vat.') - '.$no_tax_amt.'+'.$total_discounts_non_vat.') -'.$zero_rated_amt;
+
+
+            $vat_sales = ( ( ( $order['amount'] - ($total_charges + $local_tax_amt) ) - $vat)  - $no_tax_amt + $total_discounts_non_vat ) - $zero_rated_amt;
+
+            // echo '===== '.$vat_sales;
+            // $vat_sales = ( ( ( $order['amount'] ) - $vat)  - $no_tax_amt + $total_discounts) - $zero_rated_amt;
+            // echo "vat_sales= ((".$order['amount']." - ".$total_charges."))- ".$vat." )- ".$no_tax_amt." + ".$total_discounts." - ".$zero_rated_amt;
+            if($vat_sales < 0){
+                $vat_sales = 0;
+            }
+                $pdf->ln();
+                $pdf->Cell(50, 0, "_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _", '', 0, 'L');
+                $pdf->ln();
+                $pdf->Cell(40, 0, "Total Amount", '', 0, 'L');
+                $pdf->Cell(30, 0, number_format($pre_total,2), '', 0, 'R');
+                // $pdf->ln();
+            // $print_str .= $this->append_chars(" " ,"right",PAPER_DET_COL_1," ");
+                    // $print_str .= $this->append_chars("Total Amount","right",PAPER_DET_COL_2," ").
+                // $this->append_chars(number_format($pre_total,2),"left",PAPER_DET_COL_3," ")."\r\n";
+                if(count($discounts) >0){
+                $less_vat = round(($pre_total - ($order['amount'] - $total_charges + $local_tax_amt ) ) - $total_discounts,2);
+                // $print_str .= $this->append_chars(" " ,"right",PAPER_DET_COL_1," ");
+                // $pdf->ln();
+                
+                    if($less_vat >0){
+                        $pdf->ln();
+                        $pdf->Cell(40, 0, "Less VAT", '', 0, 'L');
+                        $pdf->Cell(30, 0, number_format($less_vat,2), '', 0, 'R');
+                        // $print_str .= $this->append_chars(ucwords("Less VAT"),"right",PAPER_DET_COL_2," ").$this->append_chars(number_format( $less_vat,2),"left",PAPER_DET_COL_3," ")."\r\n";
+                    }
+
+                }else{
+                    // $print_str .= $this->append_chars("Sub-Total","right",PAPER_DET_COL_2," ").
+                    // $this->append_chars(number_format($pre_total,2),"left",PAPER_DET_COL_3," ")."\r\n";
+                }
+                if(count($discounts) >0){
+                    $hasSMPWD = false;
+                    if(count($dcs['persons']) > 0){
+
+                        foreach ($discounts as $dcs_ci => $dcs) {
+                            foreach ($dcs['persons'] as $code => $dcp) {
+                                $discRateTxt = " (".$dcp['disc_rate']."%)";
+                                if($dcs['fix'] == 1){
+                                    $discRateTxt = " (".$dcp['disc_rate'].")";
+                                }
+                                $dcAmt = $dcp['amount'];
+                                $pdf->ln();
+                                $pdf->Cell(40, 0, "LESS ".$dcs_ci." DISCOUNT", '', 0, 'L');
+                                $pdf->Cell(30, 0, number_format($dcAmt,2), '', 0, 'R');
+                                  // $print_str .= $this->append_chars(" " ,"right",PAPER_DET_COL_1," ");
+                                // $print_str .= $this->append_chars("LESS ".$dcs_ci." DISCOUNT","right",PAPER_DET_COL_2," ").$this->append_chars(' '.num($dcAmt),"left",PAPER_DET_COL_3," ")."\r\n";
+                                
+                            }
+                        }
+                       
+                    }
+                } 
+           
+                if(count($charges) > 0){
+                    foreach ($charges as $charge_id => $opt) {
+                        $charge_amount = $opt['total_amount'];
+                        // if($opt['absolute'] == 0){
+                        //     $charge_amount = ($opt['amount'] / 100) * ($order['amount'] - $vat);
+                        // }
+                        $pdf->ln();
+                        $pdf->Cell(40, 0, $opt['name'] ."(".$opt['rate']."%)", '', 0, 'L');
+                        $pdf->Cell(30, 0, number_format($charge_amount,2), '', 0, 'R');
+                            // $print_str .= $this->append_chars(" " ,"right",PAPER_DET_COL_1," ");     
+                        // $print_str .= $this->append_chars($opt['name'] ."(".$opt['rate']."%)","right",PAPER_DET_COL_2," ").$this->append_chars(number_format($charge_amount,2),"left",PAPER_DET_COL_3," ")."\r\n";
+                // $print_str .= $this->append_chars("Service Charge (8.5%)","right",PAPER_DET_COL_2," ").
+                    }
+                    // $print_str .= PAPER_LINE."\r\n";
+                }
+                // if(PRINT_VERSION == 'V2'){    
+                //     $print_str .= $this->append_chars(" " ,"right",PAPER_DET_COL_1," ");     
+                //     $print_str .="<bold>";
+                //     $print_str .= $this->append_chars($tot_qty." Item(s) Total Due","right",PAPER_DET_COL_2," ")."</bold><bold>".
+                //     $this->append_chars(number_format($order['amount'],2),"left",PAPER_DET_COL_3," ")."</bold>"."\r\n";
+                // }else{
+                    $pdf->ln();
+                    $pdf->Cell(40, 0, $tot_qty." Item(s) Total Due", '', 0, 'L');
+                    $pdf->Cell(30, 0, number_format($order['amount'],2), '', 0, 'R');
+                    // $print_str .= $this->append_chars($tot_qty." Item(s) Total Due","right",PAPER_DET_COL_2," ").
+                    // $this->append_chars(number_format($order['amount'],2),"left",PAPER_DET_COL_3," ")."\r\n";
+                // }
+                $py_ref = "";
+                if (!empty($payments)) {
+
+                   
+                    $pay_total = 0;
+                    $gft_ctr = 0;
+                    $nor_ctr = 0;
+                    $py_ref = "";
+                    $total_payment = 0;
+                  
+                    foreach ($payments as $payment_id => $opt) {
+                        $pdf->ln();
+                        $pdf->Cell(40, 0, ucwords($opt['payment_type']), '', 0, 'L');
+                        $pdf->Cell(30, 0, number_format($opt['amount'],2), '', 0, 'R');
+                        // $print_str .= $this->append_chars(" " ,"right",PAPER_DET_COL_1," ");     
+                        // $print_str .= $this->append_chars(ucwords($opt['payment_type']),"right",PAPER_DET_COL_2," ").
+                        // $this->append_chars(number_format($opt['amount'],2),"left",PAPER_DET_COL_3," ")."\r\n";
+                        // $print_str .= $this->append_chars(ucwords($opt['payment_type']),"right",PAPER_TOTAL_COL_1," ").$this->append_chars("P ".number_format($opt['amount'],2),"left",PAPER_TOTAL_COL_2," ")."\r\n";
+                        
+                        if($opt['payment_type'] == 'check'){
+                            $pdf->ln();
+                            $pdf->Cell(40, 0, "     Check # ".$opt['reference'], '', 0, 'L');
+                            // $print_str .= $this->append_chars("     Check # ".$opt['reference'],"right",PAPER_WIDTH," ")."\r\n";
+                        }else{
+                            if (!empty($opt['reference']) && $opt['payment_type'] != 'deposit') {
+                                $py_ref = $opt['reference'];
+                                // $print_str .= $this->append_chars("     Reference ".$opt['reference'],"right",PAPER_WIDTH," ")."\r\n";
+                            }
+                        }
+
+                        if($opt['payment_type'] == 'foodpanda'){
+                            if (!empty($opt['approval_code']))
+                                    $pdf->ln();
+                                    $pdf->Cell(40, 0, "  Order Code: ".$opt['approval_code'], '', 0, 'L');
+                                    // $print_str .= $this->append_chars("  Order Code: ".$opt['approval_code'],"right",PAPER_WIDTH," ")."\r\n";
+                        }else if($opt['payment_type'] == 'check'){
+                                $pdf->ln();
+                                $pdf->Cell(40, 0, "     Bank: ".$opt['card_number'], '', 0, 'L');
+                            // $print_str .= $this->append_chars("     Bank: ".$opt['card_number'],"right",PAPER_WIDTH," ")."\r\n";
+                        }else if($opt['payment_type'] == 'picc'){
+                            $pdf->ln();
+                            $pdf->Cell(40, 0, "     Name: ".$opt['card_number'], '', 0, 'L');
+                            // $print_str .= $this->append_chars("     Name: ".$opt['card_number'],"right",PAPER_WIDTH," ")."\r\n";
+                        }else{
+                            if (!empty($opt['card_number'])) {
+                                if (!empty($opt['card_type'])) {
+                                    $pdf->ln();
+                                    $pdf->Cell(40, 0, "  Card Type: ".$opt['card_type'], '', 0, 'L');
+                                    // $print_str .= $this->append_chars("  Card Type: ".$opt['card_type'],"right",PAPER_WIDTH," ")."\r\n";
+                                }
+                                $print_str .= $this->append_chars("  Card #: ".$opt['card_number'],"right",PAPER_WIDTH," ")."\r\n";
+                                if (!empty($opt['approval_code']))
+                                    $pdf->ln();
+                                    $pdf->Cell(40, 0, "  Approval #: ".$opt['approval_code'], '', 0, 'L');
+                                    // $print_str .= $this->append_chars("  Approval #: ".$opt['approval_code'],"right",PAPER_WIDTH," ")."\r\n";
+                            }
+                        }
+                        // $pay_total += $opt['amount'];
+                        // if($opt['payment_type'] == 'gc'){
+                        //     $gft_ctr++;
+                        // }
+                        // else
+                        //     $nor_ctr++;
+                        if($opt['payment_type'] == 'gc'){
+                            if($opt['amount'] > $opt['to_pay']){
+                                $total_payment  += $opt['to_pay'];
+                            }else{
+                                $total_payment  += $opt['amount'];
+                            }
+                        }
+                        else{
+                            $total_payment  += $opt['amount'];
+                        }
+
+
+                      
+
+                        
+                    }
+
+                    
+                    //  if(PRINT_VERSION=="V2" && !$return_print_str){
+
+                    //     $print_str .= "STARTCUT==============================ENDCUT";
+                    // }else{
+                    //     $print_str .="<b>";
+                    // }
+
+                     // $print_str .= $this->append_chars(" " ,"right",PAPER_DET_COL_1," ");     
+                     // $pdf->ln();
+                    if($gft_ctr == 1 && $nor_ctr == 0){
+                        $pdf->ln();
+                        $pdf->Cell(40, 0, "Change", '', 0, 'L');
+                        $pdf->Cell(30, 0, number_format(0,2), '', 0, 'R');
+                        // $print_str .= $this->append_chars('Change',"right",PAPER_DET_COL_2," ").$this->append_chars(number_format(0,2),"left",PAPER_DET_COL_3," ")."\r\n";
+                    }else{
+                        $pdf->ln();
+                        $pdf->Cell(40, 0, "Change", '', 0, 'L');
+                        $pdf->Cell(30, 0, number_format(abs($total_payment - $order['amount']),2), '', 0, 'R');
+                        // $print_str .= $this->append_chars('Change',"right",PAPER_DET_COL_2," ").$this->append_chars(number_format(abs($total_payment - $order['amount']),2),"left",PAPER_DET_COL_3," ")."\r\n";
+                    }
+                    $pdf->ln();
+                    $pdf->Cell(50, 0, "_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _", '', 0, 'L');
+                    $pdf->ln();
+                       //  if(PRINT_VERSION=="V2" && !$return_print_str){
+                       //    $print_str .= "STARTCUT==============================ENDCUT";
+
+                       // }else{
+                       //   $print_str .="</b>";
+                       // }
+                    
+
+                    $total_discount_snr_count = $total_discount_pwd_count = $total_discount_count = 0;
+                    foreach ($discounts as $dcs_ci => $dcs) {
+                            if($dcs_ci == 'SNDISC' || $dcs_ci == 'PWDISC'){
+                                // echo "<pre>",print_r($dcs['persons']),"</pre>";die();
+                                foreach ($dcs['persons'] as $code => $dcp) {   
+                                    if($dcs_ci == 'SNDISC'){
+                                        $total_discount_snr_count += 1;                            
+                                    } 
+                                    if($dcs_ci == 'PWDISC'){
+
+                                        $total_discount_pwd_count += 1;                            
+                                    } 
+                                                                   }
+                            }
+                    }
+
+                     $pdf->ln();
+                     $pdf->Cell(40, 0, ucwords("Total Guest Count"), '', 0, 'L');
+                     $pdf->Cell(30, 0, (($order['guest'] >0) ? $order['guest']: 1), '', 0, 'R');
+                    // $print_str .= $this->append_chars(" " ,"right",PAPER_DET_COL_1," ").$this->append_chars(ucwords("Total Guest Count"),"right",PAPER_DET_COL_2," ").$this->append_chars((($order['guest'] >0) ? $order['guest']: 1),"left",PAPER_DET_COL_3," ")."\r\n";
+                    
+                    if($total_discount_snr_count > 0){
+                         $pdf->ln();
+                         $pdf->Cell(40, 0, ucwords("Total SC Guest Count"), '', 0, 'L');
+                         $pdf->Cell(30, 0, $total_discount_snr_count, '', 0, 'R');
+                        // $print_str .= $this->append_chars(" " ,"right",PAPER_DET_COL_1," ").$this->append_chars(ucwords("Total SC Guest Count"),"right",PAPER_DET_COL_2," ").$this->append_chars($total_discount_snr_count,"left",PAPER_DET_COL_3," ")."\r\n\r\n";
+                    }
+
+                    if($total_discount_pwd_count > 0){
+                         $pdf->ln();
+                         $pdf->Cell(40, 0, ucwords("Total PWD Guest Count:"), '', 0, 'L');
+                         $pdf->Cell(30, 0, $total_discount_pwd_count, '', 0, 'R');
+                        $print_str .= $this->append_chars(" " ,"right",PAPER_DET_COL_1," ").$this->append_chars(ucwords("Total PWD Guest Count:"),"right",PAPER_DET_COL_2," ").$this->append_chars($total_discount_pwd_count,"left",PAPER_DET_COL_3," ")."\r\n\r\n";
+                    }
+
+                    
+                    $pdf->ln();
+                    $pdf->Cell(50, 0, "_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _", '', 0, 'L');
+                    $pdf->ln();
+                    // $print_str .= PAPER_LINE_SINGLE."\r\n\r\n";
+
+                    if ($include_footer) {
+                        $rec_footer = "";
+                        if($branch['rec_footer'] != ""){
+                            $branch['rec_footer'] = "      THANK YOU COME AGAIN.         THIS SERVES AS YOUR ACKNOWLEDGEMENT RECEIPT";
+                            $wrap = str_replace ("<br>","\r\n", $branch['rec_footer'] );
+                            $exp = explode("\r\n", $wrap);
+                            foreach ($exp as $v) {
+                                $wrap2 = wordwrap($v,35,"|#|");
+                                $exp2 = explode("|#|", $wrap2);  
+                                foreach ($exp2 as $v2) {
+                                    $pdf->ln();
+                                     $pdf->Cell(50, 0, $v2, '', 0, 'C');
+                                    // $rec_footer .= $this->align_center($v2,PAPER_WIDTH," ")."\r\n";
+                                }
+                            }                        
+                        }
+                        if($order['inactive'] == 0){
+                            // $print_str .= $rec_footer;
+                        }    
+                            $pdf->ln();
+                            // $print_str .= "\r\n";
+                            // $print_str .= $this->align_center("POS Vendor Details",PAPER_WIDTH," ")."\r\n";
+                            // $print_str .= PAPER_LINE."\r\n";
+                            $pdf->Cell(50, 0, "PointOne Integrated Tech., Inc.", '', 0, 'C');
+                            $pdf->ln();
+                            $pdf->Cell(50, 0, "1409 Prestige Tower", '', 0, 'C');
+                            $pdf->ln();
+                            $pdf->Cell(50, 0, "Ortigas Center, Pasig City", '', 0, 'C');
+                            $pdf->ln();
+                            
+                            // $print_str .= $this->append_chars('Permit No.:',"right",PAPER_RD_COL_3," ")
+                                       // .  $this->append_chars($branch['permit_no'],"left",PAPER_DET_SUBCOL," ")."\r\n";
+                            // $print_str .= $this->append_chars('POS Version:',"right",PAPER_RD_COL_3," ")
+                            //            .  $this->append_chars('iPos ver 1.0',"left",PAPER_DET_SUBCOL," ")."\r\n";
+                            // $print_str .= $this->append_chars('Date Issued:',"right",PAPER_RD_COL_3," ")
+                                       // .  $this->append_chars('December 22, 2014',"left",PAPER_DET_SUBCOL," ")."\r\n";
+                                       // .  $this->append_chars(date2Word($order['datetime']),"right",PAPER_TOTAL_COL_2," ")."\r\n";
+                            // $print_str .= $this->append_chars('Valid Until:',"right",PAPER_RD_COL_3," ")
+                                       // .  $this->append_chars(date2Word('December 22, 2025'),"left",PAPER_DET_SUBCOL," ")."\r\n";
+                                       // .  $this->append_chars(date2Word( date('Y-m-d',strtotime($order['datetime'].' +5 year')) ),"right",PAPER_TOTAL_COL_2," ")."\r\n";
+
+                        if($branch['contact_no'] != ""){
+                            $pdf->Cell(50, 0, "For feedback, please call us at", '', 0, 'C');
+                            $pdf->ln();
+                            $pdf->Cell(50, 0, $branch['contact_no'], '', 0, 'C');
+                            $pdf->ln();
+                            // $print_str .= $this->align_center("For feedback, please call us at",PAPER_WIDTH," ")."\r\n"
+                                         // .$this->align_center($branch['contact_no'],PAPER_WIDTH," ")."\r\n";
+                        }
+                        if($branch['email'] != ""){
+                            $pdf->Cell(50, 0, "Or Email us at", '', 0, 'C');
+                            $pdf->ln();
+                            $pdf->Cell(50, 0, $branch['email'], '', 0, 'C');
+                            $pdf->ln();
+                            // $print_str .= $this->align_center("Or Email us at",PAPER_WIDTH," ")."\r\n" 
+                                       // .$this->align_center($branch['email'],PAPER_WIDTH," ")."\r\n";
+                        }
+                        if($branch['website'] != ""){
+                            $pdf->Cell(50, 0, "Please visit us at", '', 0, 'C');
+                            $pdf->ln();
+                            $pdf->Cell(50, 0, $branch['website'], '', 0, 'C');
+                            $pdf->ln();
+                            // $print_str .= $this->align_center("Please visit us at",PAPER_WIDTH," ")."\r\n"
+                                         // .$this->align_center($branch['website'],PAPER_WIDTH," ")."\r\n";
+                        }
+                        $pdf->ln();
+                        foreach ($discounts as $dcs_ci => $dcs) {
+                            if($dcs_ci == 'SNDISC' || $dcs_ci == 'PWDISC'){
+                                foreach ($dcs['persons'] as $code => $dcp) {
+                                    // ."\r\n"
+                                    // ."\r\n"
+                                    if($dcs_ci == 'SNDISC'){
+                                        $pdf->Cell(40, 0, "Senior Citizen TIN: ".$dcp['code'], '', 0, 'L');
+                                        $pdf->ln();
+                                        $pdf->Cell(40, 0, "OSCA ID No.: ".$dcp['name'], '', 0, 'L');
+                                        $pdf->ln();
+                                        // $print_str .= "\r\n".$this->append_chars("Senior Citizen TIN: ".$dcp['code'],"right",PAPER_TOTAL_COL_1," ");
+                                        // $print_str .= "\r\n".$this->append_chars("OSCA ID No.: ".$dcp['name'],"right",PAPER_TOTAL_COL_1," ");
+                                    }
+                                    if($dcs_ci == 'PWDISC'){
+                                        $pdf->Cell(40, 0, "PWD TIN: ".$dcp['code'], '', 0, 'L');
+                                        $pdf->ln();
+                                        $pdf->Cell(40, 0, "OSCA ID No.: ".$dcp['name'], '', 0, 'L');
+                                        $pdf->ln();
+                                        // $print_str .= "\r\n".$this->append_chars("PWD TIN: ".$dcp['code'],"right",PAPER_TOTAL_COL_1," ");
+                                        // $print_str .= "\r\n".$this->append_chars("OSCA ID No.: ".$dcp['name'],"right",PAPER_TOTAL_COL_1," ");
+                                    }
+
+                                   
+
+                                }
+                            }
+                             if($dcs_ci == 'D1018'){
+                                        $pdf->Cell(40, 0, "Name: ".$dcp['name'], '', 0, 'L');
+                                        $pdf->ln();
+                                        $pdf->Cell(40, 0, "Address:", '', 0, 'L');
+                                        $pdf->ln();
+                                        $pdf->Cell(40, 0, "TIN: ".$dcp['code'], '', 0, 'L');
+                                        $pdf->ln();
+                                        $pdf->Cell(40, 0, "VIP ID NO:", '', 0, 'L');
+                                        $pdf->ln();
+                                        //  $print_str .= "\r\n".$this->append_chars("Name: ".$dcp['name'],"right",PAPER_TOTAL_COL_1," ");
+                                        // $print_str .= "\r\n".$this->append_chars("Address: ","right",PAPER_TOTAL_COL_1," ");
+                                        // $print_str .= "\r\n".$this->append_chars("TIN: ".$dcp['code'],"right",PAPER_TOTAL_COL_1," ");
+                                        // $print_str .= "\r\n".$this->append_chars("VIP ID NO: ","right",PAPER_TOTAL_COL_1," ");
+
+                            }
+
+                            if($dcs_ci == 'D1006'){
+                                        $pdf->Cell(40, 0, "PWD TIN:", '', 0, 'L');
+                                        $pdf->ln();
+                                        $pdf->Cell(40, 0, "National Athlete ID No.: ", '', 0, 'L');
+                                        $pdf->ln();
+                                         // $print_str .= "\r\n".$this->append_chars("PWD TIN: ","right",PAPER_TOTAL_COL_1," ");
+                                        // $print_str .= "\r\n".$this->append_chars("National Athlete ID No.: ","right",PAPER_TOTAL_COL_1," ");
+                                     
+
+                            }
+
+                        }
+
+                        if($zero_rated_amt > 0){
+                                $pdf->Cell(40, 0, "Name:", '', 0, 'L');
+                                $pdf->ln();
+                                $pdf->Cell(40, 0, "Address: ", '', 0, 'L');
+                                $pdf->ln();
+                                $pdf->Cell(40, 0, "TIN:", '', 0, 'L');
+                                $pdf->ln();
+                                $pdf->Cell(40, 0, "Diplomat ID No.: ", '', 0, 'L');
+                                $pdf->ln();
+                                // $print_str .= "\r\n".$this->append_chars("Name: ","right",PAPER_TOTAL_COL_1," ");
+                                // $print_str .= "\r\n".$this->append_chars("Address: ","right",PAPER_TOTAL_COL_1," ");
+                                // $print_str .= "\r\n".$this->append_chars("TIN: ","right",PAPER_TOTAL_COL_1," ");
+                                // $print_str .= "\r\n".$this->append_chars("Diplomat ID No: ","right",PAPER_TOTAL_COL_1," ");
+                        }
+                        
+                            if(isset($py_ref) && !empty($py_ref)){
+                                $pdf->Cell(40, 0, "Name:", '', 0, 'L');
+                                $pdf->ln();
+                                $pdf->Cell(40, 0, "Address: ", '', 0, 'L');
+                                $pdf->ln();
+                                $pdf->Cell(40, 0, "TIN:", '', 0, 'L');
+                                $pdf->ln();
+                                $pdf->Cell(40, 0, "GC Serial No.: ".$py_ref, '', 0, 'L');
+                                $pdf->ln();
+                                // $print_str .= "\r\n".$this->append_chars("Name: ","right",PAPER_TOTAL_COL_1," ");
+                                // $print_str .= "\r\n".$this->append_chars("Address: ","right",PAPER_TOTAL_COL_1," ");
+                                // $print_str .= "\r\n".$this->append_chars("TIN: ","right",PAPER_TOTAL_COL_1," ");
+                                // $print_str .= "\r\n".$this->append_chars("GC Serial No: ".$py_ref,"right",PAPER_TOTAL_COL_1," ");
+
+                            }
+                        // $print_str .= PAPER_LINE."\r\n";
+                        if($order['inactive'] == 0){
+                            // $print_str .= "\r\n";
+                            $pdf->ln();
+                          
+                        }
+
+                    }
+
+                  
+                    if (!empty($order['ref']) && $order['inactive'] == 0) {
+                        // $print_str .= $this->align_center(PAPER_LINE,PAPER_WIDTH," ");
+                        $pdf->Cell(40, 0, "_________________________________", '', 0, 'L');
+                        $pdf->ln();
+                        $pdf->Cell(40, 0, "Customer Signature Over Printed Name", '', 0, 'L');
+                        $pdf->ln();
+                        // $print_str .= "\r\n\r\n".$this->append_chars("_________________________________","right",PAPER_TOTAL_COL_1," ");
+                        // $print_str .= "\r\n".$this->append_chars("Customer Signature Over Printed Name","right",PAPER_TOTAL_COL_1," ");
+                        // $print_str .= $this->align_center(PAPER_LINE,PAPER_WIDTH," ");
+                        // $print_str .= "\r\n";
+                    }
+                    
+                    // $print_str .="\r\n".$this->align_center("THIS INVOICE/RECEIPT WILL BE VALID FOR FIVE(5) YEARS FROM THE DATE OF THE PERMIT TO USE",PAPER_WIDTH," ")."\r\n";
+                    //     $print_str .= "\r\n".$this->append_chars("THIS INVOICE/RECEIPT WILL BE VALID FOR","right",PAPER_TOTAL_COL_1," ");
+                    //     $print_str .= "\r\n".$this->append_chars("FIVE(5) YEARS FROM THE DATE OF THE PERMIT","right",PAPER_TOTAL_COL_1," ");
+                    //      $print_str .= "\r\n".$this->append_chars("TO USE","right",PAPER_TOTAL_COL_1," ");
+                
+                } 
+
+                 
+            
+                // if (!empty($payments)) {
+
+                   
+                // } else {
+                //     $is_billing = true;
+                //     $print_str .= "\r\n".$this->append_chars("","right",PAPER_WIDTH,"=");
+                //     if(PRINT_VERSION == 'V1'){
+                //         $print_str .= "\r\n\r\n".$this->append_chars("Billing Amount","right",PAPER_TOTAL_COL_1," ").$this->append_chars("P ".number_format($order['amount'],2),"left",PAPER_TOTAL_COL_2," ")."\r\n";
+                //     }
+                //     if(is_array($splits)){
+                //         $print_str .= $this->append_chars("Split Amount by ".$splits['by'],"right",PAPER_TOTAL_COL_1," ").$this->append_chars("P ".number_format($splits['total'],2),"left",PAPER_TOTAL_COL_2," ")."\r\n";
+                //     }
+
+
+                //     //for senior deaitls with signature forbiliing
+                //     foreach ($discounts as $dcs_ci => $dcs) {
+                //         if($dcs_ci == 'SNDISC' || $dcs_ci == 'PWDISC'){
+                //             // $print_str .= PAPER_LINE."\r\n";
+                //             $print_str .= "\r\n";
+                //             $print_str .= $this->align_center("OSCA/PWD Details",PAPER_WIDTH," ")."\r\n";
+                //             // $print_str .= PAPER_LINE."\r\n";
+                //             // $print_str .= $this->align_center(PAPER_LINE,42," ");
+                //             break;
+                //         }
+                //     }
+                //     foreach ($discounts as $dcs_ci => $dcs) {
+                //         if($dcs_ci == 'SNDISC' || $dcs_ci == 'PWDISC'){
+                //             foreach ($dcs['persons'] as $code => $dcp) {
+                //                 // ."\r\n"
+                //                 // ."\r\n"
+                //                 $print_str .= "\r\n".$this->append_chars("ID NO      : ".$dcp['code'],"right",PAPER_TOTAL_COL_1," ");
+                //                 $print_str .= "\r\n".$this->append_chars("NAME       : ".$dcp['name'],"right",PAPER_TOTAL_COL_1," ");
+                //                 $print_str .= "\r\n".$this->append_chars("ADDRESS    : ","right",PAPER_TOTAL_COL_1," ");
+                //                 $print_str .= "\r\n".$this->append_chars("SIGNATURE  : ","right",PAPER_TOTAL_COL_1," ");
+                //                 $print_str .= "\r\n".$this->append_chars("             ____________________","right",PAPER_TOTAL_COL_1," ")."\r\n";
+                //                 // $print_str .= "\r\n".$this->append_chars(asterisks($dcp['code']),"right",28," ")."\r\n";
+                //             }
+                //         }
+                //     }
+
+
+                //     if ($include_footer) {
+                //         // $print_str .= "\r\n\r\n";
+                //         if($branch['contact_no'] != ""){
+                //             $print_str .= $this->align_center("For feedback, please call us at",PAPER_WIDTH," ")."\r\n"
+                //                          .$this->align_center($branch['contact_no'],PAPER_WIDTH," ")."\r\n";
+                //         }
+                //         if($branch['email'] != ""){
+                //             $print_str .= $this->align_center("Or Email us at",PAPER_WIDTH," ")."\r\n" 
+                //                        .$this->align_center($branch['email'],PAPER_WIDTH," ")."\r\n";
+                //         }
+                //         if($branch['website'] != "")
+                //             $print_str .= $this->align_center("Please visit us at \r\n".$branch['website'],PAPER_WIDTH," ")."\r\n";
+                //     }
+
+                // }
+
+             
+
+
+            }
+            //end of showing for cancelled trans
+        
+        $pdf->Output('gc_report.pdf', 'I');
+    }
+
+    public function get_gc_order($asJson=true,$gc_id=null){
+            /*
+             * -------------------------------------------
+             *   Load receipt data
+             * -------------------------------------------
+            */
+            $this->load->model('dine/cashier_gift_card_model');
+            $orders = $this->cashier_gift_card_model->get_trans_gc($gc_id);
+            // echo $sales_id; 
+            // echo "<pre>",print_r($orders),"</pre>";die();
+            $order = array();
+            $details = array();
+            $details2 = array();
+            $details_to = array();
+            foreach ($orders as $res) {
+                $order = array(
+                    "gc_id"=>$res->gc_id,
+                    'ref'=>$res->trans_ref,
+                    "type"=>$res->type,
+                    "table_id"=>$res->table_id,
+                    "table_name"=>$res->table_name,
+                    "guest"=>$res->guest,
+                    "serve_no"=>$res->serve_no,
+                    "user_id"=>$res->user_id,
+                    "customer_id"=>$res->customer_id,
+                    "customer_name"=>$res->customer_name,
+                    "name"=>$res->username,
+                    "terminal_id"=>$res->terminal_id,
+                    "terminal_name"=>$res->terminal_name,
+                    "terminal_code"=>$res->terminal_code,
+                    "shift_id"=>$res->shift_id,
+                    "datetime"=>$res->datetime,
+                    "update_date"=>$res->update_date,
+                    "amount"=>$res->total_amount,
+                    "balance"=>round($res->total_amount,2) - round($res->total_paid,2),
+                    "paid"=>$res->paid,
+                    "printed"=>$res->printed,
+                    "inactive"=>$res->inactive,
+                    "waiter_id"=>$res->waiter_id,
+                    "void_ref"=>$res->void_ref,
+                    "reason"=>$res->reason,
+                    "ref_no"=>$res->ref_no,
+                    "depo_amount"=>$res->depo_amount,
+                    "cname"=>$res->fname,
+                    "waiter_name"=>ucwords(strtolower($res->waiterfname." ".$res->waitermname." ".$res->waiterlname." ".$res->waitersuffix)),
+                    "waiter_username"=>ucwords(strtolower($res->waiterusername)),
+                    // "memo"=>ucwords(strtolower($res->memo))
+                    // "pay_type"=>$res->pay_type,
+                    // "pay_amount"=>$res->pay_amount,
+                    // "pay_ref"=>$res->pay_ref,
+                    // "pay_card"=>$res->pay_card,
+                );
+            }
+            // $order_menus = $this->cashier_gift_card_model->get_trans_sales_menus(null,array("trans_sales_menus.sales_id"=>$sales_id));
+            $order_menus = $this->cashier_gift_card_model->get_trans_gc_gift_cards(null,array("trans_gc_gift_cards.gc_id"=>$gc_id));
+            // echo "<pre>",print_r($order_menus),"</pre>";die();
+            // $order_items = $this->cashier_gift_card_model->get_trans_sales_items(null,array("trans_sales_items.sales_id"=>$sales_id));
+            // $order_mods = $this->cashier_gift_card_model->get_trans_sales_menu_modifiers(null,array("trans_sales_menu_modifiers.sales_id"=>$sales_id));
+            // $order_submods = $this->cashier_gift_card_model->get_trans_sales_menu_submodifiers(null,array("trans_sales_menu_submodifiers.sales_id"=>$sales_id));
+            $sales_discs = $this->cashier_gift_card_model->get_trans_gc_discounts(null,array("trans_gc_discounts.gc_id"=>$gc_id));
+            $sales_tax = $this->cashier_gift_card_model->get_trans_gc_tax(null,array("trans_gc_tax.gc_id"=>$gc_id));
+            $sales_payments = $this->cashier_gift_card_model->get_trans_gc_payments(null,array("trans_gc_payments.gc_id"=>$gc_id));
+            $sales_no_tax = $this->cashier_gift_card_model->get_trans_gc_no_tax(null,array("trans_gc_no_tax.gc_id"=>$gc_id));
+            $sales_zero_rated = $this->cashier_gift_card_model->get_trans_gc_zero_rated(null,array("trans_gc_zero_rated.gc_id"=>$gc_id));
+            $sales_charges = $this->cashier_gift_card_model->get_trans_gc_charges(null,array("trans_gc_charges.gc_id"=>$gc_id));
+            $sales_local_tax = $this->cashier_gift_card_model->get_trans_gc_local_tax(null,array("trans_gc_local_tax.gc_id"=>$gc_id));
+            $payment_fields = $this->cashier_gift_card_model->get_trans_gc_payment_fields(null,array("trans_gc_payment_fields.gc_id"=>$gc_id));
+            $pays = array();
+            foreach ($sales_payments as $py) {
+                $pays[$py->gc_payment_id] = array(
+                        "gc_id"      => $py->gc_id,
+                        "payment_type"  => $py->payment_type,
+                        "amount"        => $py->amount,
+                        "to_pay"        => $py->to_pay,
+                        "reference"     => $py->reference,
+                        "card_type"     => $py->card_type,
+                        "card_number"   => $py->card_number,
+                        "approval_code"   => $py->approval_code,
+                        "user_id"       => $py->user_id,
+                        "datetime"      => $py->datetime,
+                    );
+            }
+            foreach ($order_menus as $men) {
+                $details[$men->line_id] = array(
+                    "id"=>$men->gc_gift_card_id,
+                    "line_id"=>$men->line_id,
+                    "description_id"=>$men->description_id,
+                    "menu_id"=>$men->description_id,
+                    "name"=>$men->description_id,
+                    "code"=>$men->description_id,
+                    "price"=>$men->price,
+                    "qty"=>$men->qty,
+                    "no_tax"=>$men->no_tax,
+                    "discount"=>$men->discount,
+                    "remarks"=>$men->remarks,
+                    "free_user_id"=>$men->free_user_id,
+                    "nocharge"=>$men->nocharge,
+                    "is_takeout"=>$men->is_takeout,
+                    "kitchen_slip_printed"=>$men->kitchen_slip_printed,
+                    "gc_from"=>$men->gc_from,
+                    "gc_to"=>$men->gc_to,
+                    "brand_id"=>$men->brand_id,
+                );
+                $mods = array();
+               
+            }
+            // echo "<pre>",print_r($details),"</pre>";die();
+           
+            // echo "<pre>",print_r($details2),"</pre>";die();
+
+
+           
+            ### CHANGED #############
+            $per_item_disc = false;
+            foreach ($sales_discs as $dc) {
+                if($dc->items != ""){
+                    $per_item_disc = true;
+                }
+            }
+            // var_dump($per_item_disc); die();
+            if($per_item_disc){
+                $discounts = array();
+                $persons = array();
+                foreach ($sales_discs as $dc) {
+                    $discounts[$dc->items] = array(
+                            "no_tax"  => $dc->no_tax,
+                            "guest" => $dc->guest,
+                            "disc_rate" => $dc->disc_rate,
+                            "disc_id" => $dc->disc_id,
+                            "disc_code" => $dc->disc_code,
+                            "disc_type" => $dc->type,
+                            "amount" => $dc->amount,
+                            "fix" => $dc->fix,
+                            "name" => $dc->name,
+                            "code" => $dc->code,
+                            "bday" => $dc->bday,
+                            "items" => $dc->items,
+                            // "persons" => array()
+                    );
+                }
+            }else{
+                $discounts = array();
+                $persons = array();
+                foreach ($sales_discs as $dc) {
+                    $discounts[$dc->disc_code] = array(
+                            "no_tax"  => $dc->no_tax,
+                            "guest" => $dc->guest,
+                            "disc_rate" => $dc->disc_rate,
+                            "disc_id" => $dc->disc_id,
+                            "disc_code" => $dc->disc_code,
+                            "disc_type" => $dc->type,
+                            "fix" => $dc->fix,
+                            "items" => $dc->items,
+                            "persons" => array()
+                    );
+                }
+                foreach ($sales_discs as $dc) {
+                    $pcode = $dc->code;
+                    $bday = "";
+                    if($dc->bday != "")
+                        $bday = sql2Date($dc->bday);
+                    $person = array(
+                        "name"  => $dc->name,
+                        "code"  => $dc->code,
+                        "bday"  => $bday,
+                        "amount" => $dc->amount,
+                        "disc_rate" => $dc->disc_rate,
+                    );
+                    if(isset($discounts[$dc->disc_code])){
+                        $dscp =  $discounts[$dc->disc_code]['persons'];
+                        $dscp[$pcode] = $person;
+                        $discounts[$dc->disc_code]['persons'] = $dscp;
+                    }
+                }
+            }
+            ### CHANGED #############
+            $tax = array();
+            foreach ($sales_tax as $tx) {
+                $tax[$tx->gc_tax_id] = array(
+                        "gc_id"  => $tx->gc_id,
+                        "name"  => $tx->name,
+                        "rate" => $tx->rate,
+                        "amount" => $tx->amount
+                    );
+            }
+            $no_tax = array();
+            foreach ($sales_no_tax as $nt) {
+                $no_tax[$nt->gc_no_tax_id] = array(
+                    "gc_id" => $nt->gc_id,
+                    "amount" => $nt->amount,
+                );
+            }
+            $zero_rated = array();
+            foreach ($sales_zero_rated as $zt) {
+                $zero_rated[$zt->gc_zero_rated_id] = array(
+                    "gc_id" => $zt->gc_id,
+                    "amount" => $zt->amount,
+                    "name" => $zt->name,
+                    "card_no" => $zt->card_no
+                );
+            }
+            $local_tax = array();
+            foreach ($sales_local_tax as $lt) {
+                $local_tax[$lt->gc_local_tax_id] = array(
+                    "gc_id" => $lt->gc_id,
+                    "amount" => $lt->amount,
+                );
+            }
+            $charges = array();
+            foreach ($sales_charges as $ch) {
+                $charges[$ch->gc_charge_id] = array(
+                        "name"  => $ch->charge_name,
+                        "code"  => $ch->charge_code,
+                        "amount"  => $ch->rate,
+                        "absolute" => $ch->absolute,
+                        "total_amount" => $ch->amount,
+                        "rate"=>$ch->rate
+                    );
+            }
+            $pfields = array();
+            foreach ($payment_fields as $pf) {
+                $pfields[$pf->field_id] = array(
+                        "field_name"  => $pf->field_name,
+                        "value"  => $pf->value,
+                    );
+            }
+            if($asJson)
+                echo json_encode(array('order'=>$order,"details"=>$details,"discounts"=>$discounts,"taxes"=>$tax,"no_tax"=>$no_tax,"zero_rated"=>$zero_rated,"payments"=>$pays,"charges"=>$charges,"local_tax"=>$local_tax,"details2"=>$details2,"details_to"=>$details_to,"pfields"=>$pfields));
+            else
+                return array('order'=>$order,"details"=>$details,"discounts"=>$discounts,"taxes"=>$tax,"no_tax"=>$no_tax,"zero_rated"=>$zero_rated,"payments"=>$pays,"charges"=>$charges,"local_tax"=>$local_tax,"details2"=>$details2,"details_to"=>$details_to,"pfields"=>$pfields);
+        }
+
 }

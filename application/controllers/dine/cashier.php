@@ -6287,10 +6287,10 @@ class Cashier extends Reads {
                         $cost = ($cost / $rate);
                         // $zr = ($cost * $rate);
                         // $cost = $cost-$zr;
-                        $zero_rated += $trans['qty'] * $cost + $mod_cost + $submod_cost;
+                        $zero_rated += $trans['qty'] * ($cost + $mod_cost + $submod_cost);
                         $zero_r = 1;
                     }
-                    $total += $trans['qty'] * $cost + $mod_cost + $submod_cost;
+                    $total += $trans['qty'] * ($cost + $mod_cost + $submod_cost);
                     if(isset($trans['nocharge']) && $trans['nocharge'] != 0){
                         // $total_no_charge += $trans['qty'] * $cost;
                         // echo 'pumasok';
@@ -6303,7 +6303,7 @@ class Cashier extends Reads {
                     $men = $this->site_model->get_details($where,'menus');
 
                     if(isset($men[0]->alcohol) &&$men[0]->alcohol == 1){
-                        $alcohol += $trans['qty'] * $cost+ $mod_cost + $submod_cost;
+                        $alcohol += $trans['qty'] * ($cost+ $mod_cost + $submod_cost);
                     }
 
 
@@ -6340,6 +6340,8 @@ class Cashier extends Reads {
                 }
             }
 
+            // var_dump($per_item_disc); die();
+
             $taxable_amount1 = $gross;
             $total_disc = 0;
             if($per_item_disc){
@@ -6352,7 +6354,14 @@ class Cashier extends Reads {
                 if(count($item_discount_cart) > 0){
 
                     foreach($item_discount_cart as $id => $val){
-                        $total_disc += $val['amount'];
+                        $lvat = 0;
+                        if($val['no_tax'] == 1){
+                            $drate = $val['disc_rate']/100;
+                            $for_lv = $val['amount'] / $drate;
+
+                            $lvat = $for_lv * 0.12;
+                        }
+                        $total_disc += $val['amount'] + $lvat;
                     }
 
 
@@ -6539,7 +6548,8 @@ class Cashier extends Reads {
             // echo $discount."<br>";
             $total -= $total_disc + $less_vat;
             $total_for_charge = $total - $less_vat;
-            // echo $total;    
+            // echo $total; 
+            // die();   
             $trans_charge_cart = sess('trans_charge_cart');
             if(is_array($charge_cart)){
                 $trans_charge_cart = $charge_cart;
@@ -6558,112 +6568,112 @@ class Cashier extends Reads {
             #
             #GET VATABLE AMOUNT (FOR SM)
             #
-                if(MALL_ENABLED && MALL == 'megamall'){
-                    $discountt = 0;
-                    $taxable_amount = 0;
-                    $not_taxable_amount = 0;
-                    $discss = array();
-                    $item_count = count($trans_cart);
-                    foreach ($trans_cart as $trans_id => $v) {
-                        if(isset($v['cost']))
-                            $cost = $v['cost'];
-                        if(isset($v['price']))
-                            $cost = $v['price'];
-                        ####################
-                        if(isset($v['modifiers'])){
-                            foreach ($v['modifiers'] as $trans_mod_id => $m) {
-                                if($trans_id == $m['line_id']){
-                                    $cost += $m['price'];
-                                }
-                            }
-                        }
-                        else{
-                            if(count($trans_mod_cart) > 0){
-                                foreach ($trans_mod_cart as $trans_mod_id => $m) {
-                                    if($trans_id == $m['trans_id']){
-                                        $cost += $m['cost'];
-                                    }
-                                }
-                            }
-                        }
-                        ####################
-                        foreach ($trans_disc_cart as $disc_id => $row) {
-                            $rate = $row['disc_rate'];
-                            switch ($row['disc_type']) {
-                                case "equal":
-                                        // $divi = $cost/$row['guest'];
-                                        // $discount = ($rate / 100) * $divi;
-                                        // $cost -= $discount;
+                // if(MALL_ENABLED && MALL == 'megamall'){
+                //     $discountt = 0;
+                //     $taxable_amount = 0;
+                //     $not_taxable_amount = 0;
+                //     $discss = array();
+                //     $item_count = count($trans_cart);
+                //     foreach ($trans_cart as $trans_id => $v) {
+                //         if(isset($v['cost']))
+                //             $cost = $v['cost'];
+                //         if(isset($v['price']))
+                //             $cost = $v['price'];
+                //         ####################
+                //         if(isset($v['modifiers'])){
+                //             foreach ($v['modifiers'] as $trans_mod_id => $m) {
+                //                 if($trans_id == $m['line_id']){
+                //                     $cost += $m['price'];
+                //                 }
+                //             }
+                //         }
+                //         else{
+                //             if(count($trans_mod_cart) > 0){
+                //                 foreach ($trans_mod_cart as $trans_mod_id => $m) {
+                //                     if($trans_id == $m['trans_id']){
+                //                         $cost += $m['cost'];
+                //                     }
+                //                 }
+                //             }
+                //         }
+                //         ####################
+                //         foreach ($trans_disc_cart as $disc_id => $row) {
+                //             $rate = $row['disc_rate'];
+                //             switch ($row['disc_type']) {
+                //                 case "equal":
+                //                         // $divi = $cost/$row['guest'];
+                //                         // $discount = ($rate / 100) * $divi;
+                //                         // $cost -= $discount;
 
-                                        $divi = $cost/$row['guest'];
-                                        $divi_less = $divi;
-                                        if($row['no_tax'] == 1){
-                                            $divi_less = ($divi / 1.12);
-                                        }
-                                        $no_persons = count($row['persons']);
-                                        foreach ($row['persons'] as $code => $per) {
-                                            $discss[] = array('type'=>$row['disc_code'],'amount'=>($rate / 100) * $divi_less);
-                                            $discountt += ($rate / 100) * $divi_less;
-                                        }
-                                        $tl = $divi * ( abs($row['guest'] - $no_persons) );
-                                        $tdl = ($divi_less * $no_persons) - $discountt;
-                                        $cost = $tl - $tdl;
-                                        // $cost = ($divi * $row['guest']) - $discount;
-                                        break;
-                                default:
-                                    if($row['fix'] == 0){
-                                        $no_citizens = count($row['persons']);
-                                        if($row['no_tax'] == 1)
-                                            $cost = ($cost / 1.12);                     
-                                        foreach ($row['persons'] as $code => $per) {
-                                            $discss[] = array('type'=>$row['disc_code'],'amount'=>($rate / 100) * $cost);
-                                            $discountt += ($rate / 100) * $cost;
-                                        }
-                                        $cost -= $discountt;
-                                    }
-                                    else{
-                                        $rate = $rate/$item_count;
-                                        $discss[] = array('type'=>$row['disc_code'],'amount'=>$rate);
-                                        $discountt = $rate; 
-                                        $cost -= $discountt;
+                //                         $divi = $cost/$row['guest'];
+                //                         $divi_less = $divi;
+                //                         if($row['no_tax'] == 1){
+                //                             $divi_less = ($divi / 1.12);
+                //                         }
+                //                         $no_persons = count($row['persons']);
+                //                         foreach ($row['persons'] as $code => $per) {
+                //                             $discss[] = array('type'=>$row['disc_code'],'amount'=>($rate / 100) * $divi_less);
+                //                             $discountt += ($rate / 100) * $divi_less;
+                //                         }
+                //                         $tl = $divi * ( abs($row['guest'] - $no_persons) );
+                //                         $tdl = ($divi_less * $no_persons) - $discountt;
+                //                         $cost = $tl - $tdl;
+                //                         // $cost = ($divi * $row['guest']) - $discount;
+                //                         break;
+                //                 default:
+                //                     if($row['fix'] == 0){
+                //                         $no_citizens = count($row['persons']);
+                //                         if($row['no_tax'] == 1)
+                //                             $cost = ($cost / 1.12);                     
+                //                         foreach ($row['persons'] as $code => $per) {
+                //                             $discss[] = array('type'=>$row['disc_code'],'amount'=>($rate / 100) * $cost);
+                //                             $discountt += ($rate / 100) * $cost;
+                //                         }
+                //                         $cost -= $discountt;
+                //                     }
+                //                     else{
+                //                         $rate = $rate/$item_count;
+                //                         $discss[] = array('type'=>$row['disc_code'],'amount'=>$rate);
+                //                         $discountt = $rate; 
+                //                         $cost -= $discountt;
 
-                                    }
-                                    // $discount = ($rate / 100) * $cost;
-                                    // $cost -= $discount;
-                            }
-                        }
+                //                     }
+                //                     // $discount = ($rate / 100) * $cost;
+                //                     // $cost -= $discount;
+                //             }
+                //         }
 
-                        if($v['no_tax'] == 0){
-                            $taxable_amount += $cost * $v['qty'];
-                        }
-                        else{
-                            $not_taxable_amount += $cost * $v['qty'];
-                        }
-                    }
-                    if($not_taxable_amount > 0){
-                        $has_no_tax_disc = false;
-                        foreach ($trans_disc_cart as $disc_id => $row) {
-                            if($row['no_tax'] == 1){
-                                $has_no_tax_disc = true;
-                                break;
-                            }    
-                        }    
-                        if($has_no_tax_disc){
-                            $amount_cmpt = $net_total;                       
-                        }
-                        else{
-                            $amount_cmpt = ($taxable_amount/1.12) + $not_taxable_amount;
-                        }
-                    }
-                    else{
-                        if($taxable_amount > 0){
-                            $amount_cmpt = ($taxable_amount/1.12);
-                        }
-                        else{
-                            $amount_cmpt = $net_total;                                    
-                        }
-                    }
-                }
+                //         if($v['no_tax'] == 0){
+                //             $taxable_amount += $cost * $v['qty'];
+                //         }
+                //         else{
+                //             $not_taxable_amount += $cost * $v['qty'];
+                //         }
+                //     }
+                //     if($not_taxable_amount > 0){
+                //         $has_no_tax_disc = false;
+                //         foreach ($trans_disc_cart as $disc_id => $row) {
+                //             if($row['no_tax'] == 1){
+                //                 $has_no_tax_disc = true;
+                //                 break;
+                //             }    
+                //         }    
+                //         if($has_no_tax_disc){
+                //             $amount_cmpt = $net_total;                       
+                //         }
+                //         else{
+                //             $amount_cmpt = ($taxable_amount/1.12) + $not_taxable_amount;
+                //         }
+                //     }
+                //     else{
+                //         if($taxable_amount > 0){
+                //             $amount_cmpt = ($taxable_amount/1.12);
+                //         }
+                //         else{
+                //             $amount_cmpt = $net_total;                                    
+                //         }
+                //     }
+                // }
             #
             # END GET VATABLE AMOUNT (FOR SM)
             # 
@@ -7670,19 +7680,19 @@ class Cashier extends Reads {
                                     $cost = $v['price'];
 
                                 // $cost = $v['cost'];
-                                $total = $v['qty'] * $cost;
+                                $total_perline = $v['qty'] * $cost;
 
                                 if(isset($item_discount_cart[$trans_id])){
                                     
                                     if($item_discount_cart[$trans_id]['disc_code'] == 'DIPLOMAT'){
-                                        $zero_rated += $total / 1.12;
-                                        $not_taxable_amount += $total / 1.12;
-                                        $taxable_amount -= $total;
+                                        $zero_rated += $total_perline / 1.12;
+                                        $not_taxable_amount += $total_perline / 1.12;
+                                        $taxable_amount -= $total_perline;
                                     }else{
                                         $no_tx =  $item_discount_cart[$trans_id]['no_tax'];
                                         if($no_tx == 1){
-                                            $not_taxable_amount += $total / 1.12;
-                                            $taxable_amount -= $total;
+                                            $not_taxable_amount += $total_perline / 1.12;
+                                            $taxable_amount -= $total_perline;
                                             // die('ss');
                                         }else{
                                             // $with_disc = $total - $item_discount[$trans_id]['amount'];
@@ -10449,14 +10459,14 @@ class Cashier extends Reads {
                 if($add_reprinted){
                     if($order['printed'] >= 1){
                         $print_str .= $this->align_center('[REPRINTED]',PAPER_WIDTH," ")."\r\n";
-                        if($main_db){
+                        if(!$main_db){
                             $this->cashier_model->update_trans_sales(array('printed'=>$order['printed']+1),$order['sales_id']);
                             $log_id = $this->logs_model->add_logs('Sales Order',$log_user['id'],$log_user['full_name']." Reprinted Receipt on Sales Order #".$order['sales_id']." Reference #".$order['ref'],$order['sales_id']);
                         }
                         
                     }
                     else{
-                        if($main_db){
+                        if(!$main_db){
                             $this->cashier_model->update_trans_sales(array('printed'=>1,'billed'=>1),$order['sales_id']);
                          
                           
@@ -10467,7 +10477,7 @@ class Cashier extends Reads {
                     }
                 }
                 else{
-                    if($main_db){
+                    if(!$main_db){
                         $this->cashier_model->update_trans_sales(array('printed'=>1,'billed'=>1),$order['sales_id']);
                         if(!$return_print_str){
                              $log_id = $this->logs_model->add_logs('Sales Order',$log_user['id'],$log_user['full_name']." Printed Receipt on Sales Order #".$order['sales_id']." Reference #".$order['ref'],$order['sales_id']);
@@ -10476,7 +10486,7 @@ class Cashier extends Reads {
                 }
             }
             else{
-                if($main_db){
+                if(!$main_db){
                     $this->cashier_model->update_trans_sales(array('billed'=>1),$order['sales_id']);
                     $log_id =  $this->logs_model->add_logs('Sales Order',$log_user['id'],$log_user['full_name']." Printed Billing on Sales Order #".$order['sales_id'],$order['sales_id']);
                 }
@@ -26823,8 +26833,19 @@ class Cashier extends Reads {
             echo json_encode(array("error"=>null,"discounted_amt"=>$discount .' set'));
         }
 
-        function promo_item_qty($trans_id=-1,$ttype=''){           
+        function promo_item_qty(){
+            $name  = 'trans_cart';
 
+            $wagon = $this->session->userData($name);
+
+            foreach($wagon as $i=>$each){
+                $this->check_promo($i);
+            }
+        }
+
+        function check_promo($trans_id=-1,$ttype=''){           
+            $this->load->model('app/Pos_app');
+            
             $name  = 'trans_cart';
 
             $wagon = $this->session->userData($name);
@@ -26905,7 +26926,7 @@ class Cashier extends Reads {
             $id = '';
 
             foreach ($promos as $pr) {
-                if($pr->menu_amount > 0  && !$is_promo){
+                if($pr->menu_amount > 0  && !$is_promo){ 
                     if($pr->promo_option == 1){
 
 
@@ -26976,7 +26997,7 @@ class Cashier extends Reads {
                         if(!$multi_line && count($menu_list) == count($has_menu)){
 
                             foreach($wagon as $line=>$cart){ 
-                                if($cart['menu_id'] == $pr->menu_id && $cart['qty'] > $menu_list[$cart['menu_id']]){
+                                if($cart['menu_id'] == $pr->menu_id && isset($menu_list[$cart['menu_id']]) && $cart['qty'] > $menu_list[$cart['menu_id']]){
                                     // echo json_encode(array('id'=>1,'items'=> $wagon[0],'ref_line'=>0,'ref_qty'=>1));exit; 
                                     $wagon[$line]['qty']= $cart['qty']-$pr->qty;
 
@@ -26996,6 +27017,7 @@ class Cashier extends Reads {
                                                     'promo_type'=>$pr->promo_option,                                                    
                                                     'menu_category_id'=>$pr->menu_category_id,
                                                     'pf_id'=>$pr->pf_id,
+                                                    'item_img'=>$this->Pos_app->get_image(null,$res->menu_id)
                                                 );
 
                                     $this->session->set_userData($name,$wagon);
@@ -27005,7 +27027,53 @@ class Cashier extends Reads {
                                     echo json_encode(array('id'=>$id,'items'=> $wagon[$id],'ref_line'=>$line,'ref_qty'=>$wagon[$line]['qty']));
 
                                     return false;
-                                }
+                                }else if(in_array($pr->sched_id, $schs) && $pr->menu_id == $wagon[$trans_id]['menu_id']){
+                                    if( $wagon[$trans_id]['qty'] > $pr->qty){
+                                        $id = max(array_keys($wagon))+1;
+
+                                        $wagon[$trans_id]['qty'] -= $pr->qty;
+                                        $wagon[$trans_id]['name'] = $wagon[$trans_id]['qty'] > 1 ? $res->menu_name.' @ '. $wagon[$trans_id]['cost'] : $res->menu_name;
+
+                                        $wagon[] = array(
+                                                        "menu_id"=>$res->menu_id,
+                                                        "name"=>$res->menu_name,
+                                                        "qty"=>1,
+                                                        "cost"=>$pr->menu_amount,
+                                                        "no_tax"=>$res->no_tax,
+                                                        "free"=>1,
+                                                        "sched"=>$res->menu_sched_id,                                                    
+                                                        'type'=>'free-menu',
+                                                        'ref_trans_id'=>$trans_id,
+                                                        'is_takeout'=>$ttype,
+                                                        'is_promo'=>1,
+                                                        'promo_type'=>$pr->promo_option,                                                    
+                                                        'menu_category_id'=>$pr->menu_category_id,
+                                                        'pf_id'=>$pr->pf_id,
+                                                        'item_img'=>$this->Pos_app->get_image(null,$res->menu_id)
+                                                    );
+
+                                        // $this->session->set_userData($name,$wagon);
+                                        $this->session->set_userData($name,$wagon);
+
+                                        echo json_encode(array('id'=>$id,'items'=> $wagon[$id],'ref_line'=>$trans_id,'ref_qty'=>$wagon[$trans_id]['qty'],'price'=>$wagon[$trans_id]['cost'],'name'=>$wagon[$trans_id]['name']));
+                                    }else{
+                                        $wagon[$trans_id]['cost'] = $pr->menu_amount;
+                                        $wagon[$trans_id]['is_promo'] = 1;
+                                        $wagon[$trans_id]['promo_type'] = $pr->promo_option;
+                                        $wagon[$trans_id]['pf_id'] = $pr->pf_id;
+
+                                        $this->session->set_userData($name,$wagon);
+
+                                        echo json_encode(array('id'=>$trans_id,'cost'=>$pr->menu_amount,'price'=>''));
+                                    }                                   
+
+                                    
+
+                                    $single_promo = true;
+
+                                    
+                                    return false;
+                                }  
                             }                            
                         }else{
                              $menu_list = array();
@@ -27025,17 +27093,48 @@ class Cashier extends Reads {
                             } 
                                  // print_r($nwagon);
                             if(in_array($pr->sched_id, $schs) && count($menu_list) == count($has_menu) && $pr->menu_id == $wagon[$trans_id]['menu_id']){
-                               
-                                $wagon[$trans_id]['cost'] = $pr->menu_amount;
-                                $wagon[$trans_id]['is_promo'] = 1;
-                                $wagon[$trans_id]['promo_type'] = $pr->promo_option;
-                                $wagon[$trans_id]['pf_id'] = $pr->pf_id;
 
-                                $this->session->set_userData($name,$wagon);
+                                if( $wagon[$trans_id]['qty'] > $pr->qty){
+                                    $id = max(array_keys($wagon))+1;
+
+                                    $wagon[$trans_id]['qty'] = $wagon[$trans_id]['qty'] - $pr->qty;
+                                    $price = $wagon[$trans_id]['qty'] > 1 ? '@' .$wagon[$trans_id]['cost'] : '';
+
+                                    $wagon[] = array(
+                                                    "menu_id"=>$res->menu_id,
+                                                    "name"=>$res->menu_name,
+                                                    "qty"=>1,
+                                                    "cost"=>$pr->menu_amount,
+                                                    "no_tax"=>$res->no_tax,
+                                                    "free"=>1,
+                                                    "sched"=>$res->menu_sched_id,                                                    
+                                                    'type'=>'free-menu',
+                                                    'ref_trans_id'=>$trans_id,
+                                                    'is_takeout'=>$ttype,
+                                                    'is_promo'=>1,
+                                                    'promo_type'=>$pr->promo_option,                                                    
+                                                    'menu_category_id'=>$pr->menu_category_id,
+                                                    'pf_id'=>$pr->pf_id,
+                                                    'item_img'=>$this->Pos_app->get_image(null,$res->menu_id)
+                                                );
+
+                                    $this->session->set_userData($name,$wagon);
+                                    echo json_encode(array('id'=>$id,'items'=> $wagon[$id],'ref_line'=>$trans_id,'ref_qty'=>$wagon[$trans_id]['qty'],'cost'=>$wagon[$trans_id]['cost']*$wagon[$trans_id]['qty'],'price'=>$price));
+                                }else{
+                                    $wagon[$trans_id]['cost'] = $pr->menu_amount;
+                                    $wagon[$trans_id]['is_promo'] = 1;
+                                    $wagon[$trans_id]['promo_type'] = $pr->promo_option;
+                                    $wagon[$trans_id]['pf_id'] = $pr->pf_id;
+
+                                    $this->session->set_userData($name,$wagon);
+
+                                    echo json_encode(array('id'=>$trans_id,'cost'=>$pr->menu_amount,'price'=>''));
+                                }
 
                                 $single_promo = true;
 
-                                echo json_encode(array('id'=>$trans_id,'price'=>$pr->menu_amount));
+                                // echo json_encode(array('id'=>$trans_id,'price'=>$pr->menu_amount));
+
                                 return false;
                             }  
                         }
@@ -27077,6 +27176,7 @@ class Cashier extends Reads {
                                     'persons'=>array(1),
                                     'fix'=>1,
                                     'no_tax'=>0,
+                                    'item_img'=>$this->Pos_app->get_image(null,$res->menu_id)
                             );
                                 // print_r($disc);
                             $single_promo = true;
@@ -27085,6 +27185,7 @@ class Cashier extends Reads {
                             $counter = $this->session->userData('counter');
                             $counter['pf_id'] = $pr->pf_id;
                             $counter['percent_disc'] = $pr->value;
+                            
                             $this->session->set_userData('counter',$counter);
 
                              echo json_encode(array('percent_disc'=>$pr->value));
@@ -27111,11 +27212,27 @@ class Cashier extends Reads {
                                                 'is_promo'=>1,
                                                 'promo_type'=>$pr->promo_option,
                                                 'free_promo_amount'=>$pr->amount,
-                                                'pf_id'=>$pr->pf_id
+                                                'pf_id'=>$pr->pf_id,
+                                                'item_img'=>$this->Pos_app->get_image(null,$res->menu_id)
                                             );
                                 $qty =  $pr->qty;
                                  $this->session->set_userData($name,$wagon);
                             }
+                        }
+
+                        if($id != ''){
+                            $promo_menu = array('id'=>$id,'free_menu'=>$free_menu,'items'=> $wagon[$id]);
+
+                           if($promo_exist){
+                                $promo_menu['qty'] = $qty;
+                           }
+
+                           if(isset($trans_ids)){
+                                $promo_menu['sel_trans_id'] = $trans_ids[0];
+                           }
+
+                            echo json_encode($promo_menu);
+                            return;  
                         }
                         
                     }else if($pr->promo_option==2){
@@ -27216,38 +27333,41 @@ class Cashier extends Reads {
                                                 'is_promo'=>1,
                                                 'promo_type'=>$pr->promo_option,
                                                 'pf_id'=>$pr->pf_id,
-
+                                                'item_img'=>$this->Pos_app->get_image(null,$res->menu_id)
                                             );
                                 $qty =  $row['qty']*$pr->qty;
+
+                                 $this->session->set_userData($name,$wagon);
+                   
+                   
+
+                                if($id != ''){
+                                    $promo_menu = array('id'=>$id,'free_menu'=>$free_menu,'items'=> $wagon[$id]);
+
+                                   if($promo_exist){
+                                        $promo_menu['qty'] = $qty;
+                                   }
+
+                                   if(isset($trans_ids)){
+                                        $promo_menu['sel_trans_id'] = $trans_ids[0];
+                                   }
+
+                                    echo json_encode($promo_menu);
+                                    return;  
+                                }
                             }
                             
                         }   
                     }
                     
                    
-                    $this->session->set_userData($name,$wagon);
                    
-                   
-
-                    if($id != ''){
-                        $promo_menu = array('id'=>$id,'free_menu'=>$free_menu,'items'=> $wagon[$id]);
-
-                       if($promo_exist){
-                            $promo_menu['qty'] = $qty;
-                       }
-
-                       if(isset($trans_ids)){
-                            $promo_menu['sel_trans_id'] = $trans_ids[0];
-                       }
-
-                        echo json_encode($promo_menu);
-                        return;  
-                    }
                 }
             }
                
         
         }
+
 
         function cat_total($cat_id){
             $name  = 'trans_cart';
@@ -27300,7 +27420,7 @@ class Cashier extends Reads {
 
                     echo $i;
                     return;
-                }elseif(isset($cart['pf_id'])){
+                }else if(isset($cart['pf_id'])){
                     $promo = $this->site_model->get_tbl('promo_free',array('pf_id'=>$cart['pf_id']));
 
                     if($promo){
@@ -30505,7 +30625,14 @@ class Cashier extends Reads {
                     //for save sa trans_sales_discounts pero per item
                     $trans_sales_disc_items = array();
                     foreach($item_discount as $id => $dc){
-                        $total_disc += $dc['amount'];
+                        $lvat = 0;
+                        if($dc['no_tax'] == 1){
+                            $drate = $dc['disc_rate']/100;
+                            $for_lv = $dc['amount'] / $drate;
+
+                            $lvat = $for_lv * 0.12;
+                        }
+                        $total_disc += $dc['amount'] + $lvat;
                         
 
                     }

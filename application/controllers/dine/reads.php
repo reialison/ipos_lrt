@@ -7708,15 +7708,18 @@ class Reads extends Prints {
         }
 
         public function miaa_xfile($zread_id=null,$regen=false){
+            $sales_type_total = $this->session->userData('sales_type_total');
             $error = 0;
             $error_msg = null;
             $mall_db        = $this->site_model->get_tbl('miaa');
             $tenant_code    = $mall_db[0]->tenant_code;
             $sales_type     = $mall_db[0]->sales_type;
             $file_path      = filepathisize($mall_db[0]->file_path);
+            $file_path_bu      = filepathisize('C:/MIAA/');
             $zread          = $this->detail_zread($zread_id);
             $eod_ctr = $zread['ctr'] + 1;
             $dlmtr          = "\r\n";
+            $see_server = true;
 
             $mon = array('01'=>'1','02'=>'2','03'=>'3','04'=>'4','05'=>'5','06'=>'6','07'=>'7','08'=>'8','09'=>'9','10'=>'A','11'=>'B','12'=>'C');
 
@@ -7727,7 +7730,9 @@ class Reads extends Prints {
 
                 // $file_path .= $year."/";
                 if (!file_exists($file_path)) {   
-                    mkdir($file_path, 0777, true);
+                    // mkdir($file_path, 0777, true);
+                    $see_server = false;
+                    site_alert('Can not connect to the server. Please manually copt textfile from backup folder in C:/MIAA','error');
                 }
                 ###################################################################################################################################
                 ### GET DATA
@@ -7792,18 +7797,18 @@ class Reads extends Prints {
                     }
                 ###################################################################################################################################
                 ### HOURLY FILE
-                    $hour_code = array(1=>array('start'=>'01:00:01','end'=>'02:00:00'),2=>array('start'=>'02:00:01','end'=>'03:00:00'),
-                                       3=>array('start'=>'03:00:01','end'=>'04:00:00'),4=>array('start'=>'04:00:01','end'=>'05:00:00'),
-                                       5=>array('start'=>'05:00:01','end'=>'06:00:00'),6=>array('start'=>'06:00:01','end'=>'07:00:00'),
-                                       7=>array('start'=>'07:00:01','end'=>'08:00:00'),8=>array('start'=>'08:00:01','end'=>'09:00:00'),
-                                       9=>array('start'=>'09:00:01','end'=>'10:00:00'),10=>array('start'=>'10:00:01','end'=>'11:00:00'),
-                                       11=>array('start'=>'11:00:01','end'=>'12:00:00'),12=>array('start'=>'12:00:01','end'=>'13:00:00'),
-                                       13=>array('start'=>'13:00:01','end'=>'14:00:00'),14=>array('start'=>'14:00:01','end'=>'15:00:00'),
-                                       15=>array('start'=>'15:00:01','end'=>'16:00:00'),16=>array('start'=>'16:00:01','end'=>'17:00:00'),
-                                       17=>array('start'=>'17:00:01','end'=>'18:00:00'),18=>array('start'=>'18:00:01','end'=>'19:00:00'),
-                                       19=>array('start'=>'19:00:01','end'=>'20:00:00'),20=>array('start'=>'20:00:01','end'=>'21:00:00'),
-                                       21=>array('start'=>'21:00:01','end'=>'22:00:00'),22=>array('start'=>'22:00:01','end'=>'23:00:00'),
-                                       23=>array('start'=>'23:00:01','end'=>'23:59:59'),24=>array('start'=>'00:00:01','end'=>'01:00:00'),
+                    $hour_code = array(1=>array('start'=>'01:01','end'=>'02:00'),2=>array('start'=>'02:01','end'=>'03:00'),
+                                       3=>array('start'=>'03:01','end'=>'04:00'),4=>array('start'=>'04:01','end'=>'05:00'),
+                                       5=>array('start'=>'05:01','end'=>'06:00'),6=>array('start'=>'06:01','end'=>'07:00'),
+                                       7=>array('start'=>'07:01','end'=>'08:00'),8=>array('start'=>'08:01','end'=>'09:00'),
+                                       9=>array('start'=>'09:01','end'=>'10:00'),10=>array('start'=>'10:01','end'=>'11:00'),
+                                       11=>array('start'=>'11:01','end'=>'12:00'),12=>array('start'=>'12:01','end'=>'13:00'),
+                                       13=>array('start'=>'13:01','end'=>'14:00'),14=>array('start'=>'14:01','end'=>'15:00'),
+                                       15=>array('start'=>'15:01','end'=>'16:00'),16=>array('start'=>'16:01','end'=>'17:00'),
+                                       17=>array('start'=>'17:01','end'=>'18:00'),18=>array('start'=>'18:01','end'=>'19:00'),
+                                       19=>array('start'=>'19:01','end'=>'20:00'),20=>array('start'=>'20:01','end'=>'21:00'),
+                                       21=>array('start'=>'21:01','end'=>'22:00'),22=>array('start'=>'22:01','end'=>'23:00'),
+                                       23=>array('start'=>'23:01','end'=>'23:59'),24=>array('start'=>'00:01','end'=>'01:00'),
                                       );
                     $str = "";
                     if(count($trans['all_orders']) > 0){
@@ -7827,9 +7832,12 @@ class Reads extends Prints {
 
                             foreach ($trans['all_orders'] as $val) {
                                 if($val->type_id == SALES_TRANS && $val->trans_ref != "" && $val->inactive == 0){
-                                    $time = DateTime::createFromFormat('Y-m-d H:i:s',$val->datetime);
-                                    $start = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['start']);
-                                    $end = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['end']);
+                                    // $time = DateTime::createFromFormat('Y-m-d H:i',$val->datetime);
+                                    // $start = DateTime::createFromFormat('Y-m-d H:i',date2Sql($val->datetime)." ".$range['start']);
+                                    // $end = DateTime::createFromFormat('Y-m-d H:i',date2Sql($val->datetime)." ".$range['end']);
+                                    $time = date('Y-m-d H:i',strtotime($val->datetime));
+                                    $start = date('Y-m-d H:i',strtotime(date2Sql($val->datetime)." ".$range['start']));
+                                    $end = date('Y-m-d H:i',strtotime(date2Sql($val->datetime)." ".$range['end']));
                                     if($time >= $start && $time <= $end){
                                         $sales_date = sql2Date($val->datetime);
                                         // echo $sales_date.'in';
@@ -7871,18 +7879,24 @@ class Reads extends Prints {
                                     }
                                 }else if($val->type_id == SALES_TRANS && $val->trans_ref != "" && $val->inactive == 1){
                                     //voided
-                                    $time = DateTime::createFromFormat('Y-m-d H:i:s',$val->datetime);
-                                    $start = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['start']);
-                                    $end = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['end']);
+                                    // $time = DateTime::createFromFormat('Y-m-d H:i',$val->datetime);
+                                    // $start = DateTime::createFromFormat('Y-m-d H:i',date2Sql($val->datetime)." ".$range['start']);
+                                    // $end = DateTime::createFromFormat('Y-m-d H:i',date2Sql($val->datetime)." ".$range['end']);
+                                    $time = date('Y-m-d H:i',strtotime($val->datetime));
+                                    $start = date('Y-m-d H:i',strtotime(date2Sql($val->datetime)." ".$range['start']));
+                                    $end = date('Y-m-d H:i',strtotime(date2Sql($val->datetime)." ".$range['end']));
                                     if($time >= $start && $time <= $end){
                                         $guest += $val->guest;
                                         $trans_cnt += 1;
                                     }
                                 }else if($val->type_id == 11){
                                     // void trans
-                                    $time = DateTime::createFromFormat('Y-m-d H:i:s',$val->datetime);
-                                    $start = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['start']);
-                                    $end = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['end']);
+                                    // $time = DateTime::createFromFormat('Y-m-d H:i',$val->datetime);
+                                    // $start = DateTime::createFromFormat('Y-m-d H:i',date2Sql($val->datetime)." ".$range['start']);
+                                    // $end = DateTime::createFromFormat('Y-m-d H:i',date2Sql($val->datetime)." ".$range['end']);
+                                    $time = date('Y-m-d H:i',strtotime($val->datetime));
+                                    $start = date('Y-m-d H:i',strtotime(date2Sql($val->datetime)." ".$range['start']));
+                                    $end = date('Y-m-d H:i',strtotime(date2Sql($val->datetime)." ".$range['end']));
                                     if($time >= $start && $time <= $end){
                                         // $guest += $val->guest;
                                         $trans_cnt += 1;
@@ -7890,9 +7904,12 @@ class Reads extends Prints {
                                 }    
                             }
                             foreach ($trans['sales']['void']['orders'] as $val) {
-                                $time = DateTime::createFromFormat('Y-m-d H:i:s',$val->datetime);
-                                $start = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['start']);
-                                $end = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['end']);
+                                // $time = DateTime::createFromFormat('Y-m-d H:i',$val->datetime);
+                                // $start = DateTime::createFromFormat('Y-m-d H:i',date2Sql($val->datetime)." ".$range['start']);
+                                // $end = DateTime::createFromFormat('Y-m-d H:i',date2Sql($val->datetime)." ".$range['end']);
+                                $time = date('Y-m-d H:i',strtotime($val->datetime));
+                                    $start = date('Y-m-d H:i',strtotime(date2Sql($val->datetime)." ".$range['start']));
+                                    $end = date('Y-m-d H:i',strtotime(date2Sql($val->datetime)." ".$range['end']));
                                 if($time >= $start && $time <= $end){
                                     $cancel_cnt += 1;
                                     $cancel_amt += $val->total_amount;
@@ -7989,8 +8006,11 @@ class Reads extends Prints {
                         $str .= "10".$total_guest;
                     }
                     // $hrlyfile = "H".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).$eod_ctr.".".$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
-                    $hrlyfile = "H".substr($tenant_code,0,4).TERMINAL_NUMBER.$gts['ctr'].".".$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
-                    $this->write_file($file_path.$hrlyfile,$str);
+                    $hrlyfile = "H".substr($tenant_code,0,4).TERMINAL_NUMBER."1.".$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
+                    if($see_server){
+                        $this->write_file($file_path.$hrlyfile,$str);
+                    }
+                    $this->write_file($file_path_bu.$hrlyfile,$str);
                 ###################################################################################################################################
                 ### DISCOUNT FILE
                     $str = "";
@@ -8098,11 +8118,28 @@ class Reads extends Prints {
                     $str .= "20".$total_guest.$dlmtr;
                     $str .= "21".$eod['ctr'].$dlmtr;
                     $str .= "22".$total_trans_cnt.$dlmtr;
-                    $str .= "23".$sales_type.$dlmtr;
-                    $str .= "24".numNoDot(numInt($total_net));
-                    $dailyfile = "S".substr($tenant_code,0,4).TERMINAL_NUMBER.$gts['ctr'].".".$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
+                    // $str .= "23".$sales_type.$dlmtr;
+                    // $str .= "24".numNoDot(numInt($total_net));
+
+                    ksort($sales_type_total);
+                    $acount = count($sales_type_total);
+                    $actr = 1;
+                    foreach($sales_type_total as $ctype => $vald){
+                        $str .= "23".$ctype.$dlmtr;
+                        if($actr == $acount){
+                            $str .= "24".numNoDot(numInt($vald['tamount']));
+                        }else{
+                            $str .= "24".numNoDot(numInt($vald['tamount'])).$dlmtr;
+                        }
+
+                        $actr++;
+                    }
+                    $dailyfile = "S".substr($tenant_code,0,4).TERMINAL_NUMBER."1.".$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
                     // $dailyfile = "S".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).$eod_ctr.".".$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
-                    $this->write_file($file_path.$dailyfile,$str);
+                    if($see_server){
+                        $this->write_file($file_path.$dailyfile,$str);
+                    }
+                    $this->write_file($file_path_bu.$dailyfile,$str);
                 ###################################################################################################################################
                 // update for main
                 $this->site_model->db = $this->load->database('main', TRUE);
@@ -8126,70 +8163,70 @@ class Reads extends Prints {
                 else{
                     site_alert("MIAA File successfully created.","success");
 
-                    $file_txt_pt = "L".substr($tenant_code,0,4).TERMINAL_NUMBER.'.'.$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
-                    // $file_txt_pt = "L".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).'.'.$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
-                    $text_pt = $file_path."/".$file_txt_pt;
+                    // $file_txt_pt = "L".substr($tenant_code,0,4).TERMINAL_NUMBER.'.'.$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
+                    // // $file_txt_pt = "L".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).'.'.$mon[date('m',strtotime($zread['read_date']))].date('d',strtotime($zread['read_date']));
+                    // $text_pt = $file_path."/".$file_txt_pt;
 
-                    if (file_exists($text_pt)) {
-                        // echo "The file $filename exists";
-                        // die();
+                    // if (file_exists($text_pt)) {
+                    //     // echo "The file $filename exists";
+                    //     // die();
 
-                        $fd=fopen($text_pt,"r");
-                        $textFileContents=fread($fd,filesize($text_pt));
-                        // $textFileContents=$textFileContents.$dlmtr;
+                    //     $fd=fopen($text_pt,"r");
+                    //     $textFileContents=fread($fd,filesize($text_pt));
+                    //     // $textFileContents=$textFileContents.$dlmtr;
 
-                        //last data
-                        $last_data = "";
-                        //1 - 6
-                        $trans_date2 = date('m/d/Y',strtotime($zread['read_date']));
-                        $time = $this->site_model->get_db_now();
-                        $trans_time = date('H:i:s',strtotime($time));
-                        $last_data = commar($last_data,array($tenant_code,'00'.TERMINAL_NUMBER,$trans_date2,$trans_time,'00000000','00'));
-                        // 7
-                        $last_data = commar($last_data,0);
-                        // 8
-                        $last_data = commar($last_data,numInt(0));
-                        // 9
-                        $last_data = commar($last_data,numInt(0));
-                        //10
-                        $last_data = commar($last_data,numInt(0));
-                        //11 - 12
-                        $last_data = commar($last_data,array(numInt(0),numInt(0)));
-                        //13
-                        $last_data = commar($last_data,numInt(0));
-                        //14
-                        $last_data = commar($last_data,numInt(0));
-                        //15
-                        $last_data = commar($last_data,numInt(0));
-                        //16
-                        $last_data = commar($last_data,numInt(0));
-                        //17
-                        $last_data = commar($last_data,numInt(0));
-                        //18
-                        $last_data = commar($last_data,numInt(0));
-                        //19
-                        $last_data = commar($last_data,0);
-                        //20
-                        $last_data = commar($last_data,numInt(0));
-                        //21
-                        $last_data = commar($last_data,numInt(0));
-                        //22
-                        $last_data = commar($last_data,numInt(0));
-                        //23
-                        $last_data = commar($last_data,'1');
+                    //     //last data
+                    //     $last_data = "";
+                    //     //1 - 6
+                    //     $trans_date2 = date('m/d/Y',strtotime($zread['read_date']));
+                    //     $time = $this->site_model->get_db_now();
+                    //     $trans_time = date('H:i:s',strtotime($time));
+                    //     $last_data = commar($last_data,array($tenant_code,'00'.TERMINAL_NUMBER,$trans_date2,$trans_time,'00000000','00'));
+                    //     // 7
+                    //     $last_data = commar($last_data,0);
+                    //     // 8
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     // 9
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //10
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //11 - 12
+                    //     $last_data = commar($last_data,array(numInt(0),numInt(0)));
+                    //     //13
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //14
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //15
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //16
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //17
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //18
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //19
+                    //     $last_data = commar($last_data,0);
+                    //     //20
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //21
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //22
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //23
+                    //     $last_data = commar($last_data,'1');
 
-                        $last_data = substr($last_data,0,-1);
+                    //     $last_data = substr($last_data,0,-1);
 
 
 
-                        $newdata = $textFileContents.$last_data;
+                    //     $newdata = $textFileContents.$last_data;
 
-                        $fp = fopen($text_pt, "w+");
-                        fwrite($fp,$newdata);
-                        fclose($fp);
-                        // echo $textFileContents;
+                    //     $fp = fopen($text_pt, "w+");
+                    //     fwrite($fp,$newdata);
+                    //     fclose($fp);
+                    //     // echo $textFileContents;
                         
-                    }
+                    // }
 
                 }
 
@@ -8209,16 +8246,20 @@ class Reads extends Prints {
 
         public function miaa_xfile_regen($zread_id=null,$regen=false,$sel_date){
             // echo $zread_id; die();
-
+            $sales_type_total = $this->session->userData('sales_type_total');
+            // echo '<pre>',print_r($sales_type_total),'</pre>'; die();
             $error = 0;
             $error_msg = null;
             $mall_db        = $this->site_model->get_tbl('miaa');
             $tenant_code    = $mall_db[0]->tenant_code;
             $sales_type     = $mall_db[0]->sales_type;
             $file_path      = filepathisize($mall_db[0]->file_path);
+            $file_path_bu      = filepathisize('C:/MIAA/');
             $zread          = $this->detail_zread($zread_id);
             $eod_ctr = $zread['ctr'] + 1;
             $dlmtr          = "\r\n";
+
+            $see_server = true;
 
             $mon = array('01'=>'1','02'=>'2','03'=>'3','04'=>'4','05'=>'5','06'=>'6','07'=>'7','08'=>'8','09'=>'9','10'=>'A','11'=>'B','12'=>'C');
 
@@ -8231,7 +8272,9 @@ class Reads extends Prints {
 
                 // $file_path .= $year."/";
                 if (!file_exists($file_path)) {   
-                    mkdir($file_path, 0777, true);
+                    // mkdir($file_path, 0777, true);
+                    $see_server = false;
+                    site_alert('Can not connect to the server. Please manually copt textfile from backup folder in C:/MIAA','error');
                 }
                 ###################################################################################################################################
                 ### GET DATA
@@ -8296,18 +8339,18 @@ class Reads extends Prints {
                     }
                 ###################################################################################################################################
                 ### HOURLY FILE
-                    $hour_code = array(1=>array('start'=>'01:00:01','end'=>'02:00:00'),2=>array('start'=>'02:00:01','end'=>'03:00:00'),
-                                       3=>array('start'=>'03:00:01','end'=>'04:00:00'),4=>array('start'=>'04:00:01','end'=>'05:00:00'),
-                                       5=>array('start'=>'05:00:01','end'=>'06:00:00'),6=>array('start'=>'06:00:01','end'=>'07:00:00'),
-                                       7=>array('start'=>'07:00:01','end'=>'08:00:00'),8=>array('start'=>'08:00:01','end'=>'09:00:00'),
-                                       9=>array('start'=>'09:00:01','end'=>'10:00:00'),10=>array('start'=>'10:00:01','end'=>'11:00:00'),
-                                       11=>array('start'=>'11:00:01','end'=>'12:00:00'),12=>array('start'=>'12:00:01','end'=>'13:00:00'),
-                                       13=>array('start'=>'13:00:01','end'=>'14:00:00'),14=>array('start'=>'14:00:01','end'=>'15:00:00'),
-                                       15=>array('start'=>'15:00:01','end'=>'16:00:00'),16=>array('start'=>'16:00:01','end'=>'17:00:00'),
-                                       17=>array('start'=>'17:00:01','end'=>'18:00:00'),18=>array('start'=>'18:00:01','end'=>'19:00:00'),
-                                       19=>array('start'=>'19:00:01','end'=>'20:00:00'),20=>array('start'=>'20:00:01','end'=>'21:00:00'),
-                                       21=>array('start'=>'21:00:01','end'=>'22:00:00'),22=>array('start'=>'22:00:01','end'=>'23:00:00'),
-                                       23=>array('start'=>'23:00:01','end'=>'23:59:59'),24=>array('start'=>'00:00:01','end'=>'01:00:00'),
+                    $hour_code = array(1=>array('start'=>'01:01','end'=>'02:00'),2=>array('start'=>'02:01','end'=>'03:00'),
+                                       3=>array('start'=>'03:01','end'=>'04:00'),4=>array('start'=>'04:01','end'=>'05:00'),
+                                       5=>array('start'=>'05:01','end'=>'06:00'),6=>array('start'=>'06:01','end'=>'07:00'),
+                                       7=>array('start'=>'07:01','end'=>'08:00'),8=>array('start'=>'08:01','end'=>'09:00'),
+                                       9=>array('start'=>'09:01','end'=>'10:00'),10=>array('start'=>'10:01','end'=>'11:00'),
+                                       11=>array('start'=>'11:01','end'=>'12:00'),12=>array('start'=>'12:01','end'=>'13:00'),
+                                       13=>array('start'=>'13:01','end'=>'14:00'),14=>array('start'=>'14:01','end'=>'15:00'),
+                                       15=>array('start'=>'15:01','end'=>'16:00'),16=>array('start'=>'16:01','end'=>'17:00'),
+                                       17=>array('start'=>'17:01','end'=>'18:00'),18=>array('start'=>'18:01','end'=>'19:00'),
+                                       19=>array('start'=>'19:01','end'=>'20:00'),20=>array('start'=>'20:01','end'=>'21:00'),
+                                       21=>array('start'=>'21:01','end'=>'22:00'),22=>array('start'=>'22:01','end'=>'23:00'),
+                                       23=>array('start'=>'23:01','end'=>'23:59'),24=>array('start'=>'00:01','end'=>'01:00'),
                                       );
                     $str = "";
                     if(count($trans['all_orders']) > 0){
@@ -8334,9 +8377,14 @@ class Reads extends Prints {
                             // foreach ($trans['sales']['settled']['orders'] as $val) {
                             foreach ($trans['all_orders'] as $val) {
                                 if($val->type_id == SALES_TRANS && $val->trans_ref != "" && $val->inactive == 0){
-                                    $time = DateTime::createFromFormat('Y-m-d H:i:s',$val->datetime);
-                                    $start = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['start']);
-                                    $end = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['end']);
+                                    // $time = DateTime::createFromFormat('Y-m-d H:i',$val->datetime);
+                                    // $start = DateTime::createFromFormat('Y-m-d H:i',date2Sql($val->datetime)." ".$range['start']);
+                                    // $end = DateTime::createFromFormat('Y-m-d H:i',date2Sql($val->datetime)." ".$range['end']);
+
+                                    $time = date('Y-m-d H:i',strtotime($val->datetime));
+                                    $start = date('Y-m-d H:i',strtotime(date2Sql($val->datetime)." ".$range['start']));
+                                    $end = date('Y-m-d H:i',strtotime(date2Sql($val->datetime)." ".$range['end']));
+                                    // echo $time.'---'.$start; die();
                                     if($time >= $start && $time <= $end){
                                         $sales_date = sql2Date($val->datetime);
                                         // echo $sales_date.'in';
@@ -8378,18 +8426,24 @@ class Reads extends Prints {
                                     }
                                 }else if($val->type_id == SALES_TRANS && $val->trans_ref != "" && $val->inactive == 1){
                                     //voided
-                                    $time = DateTime::createFromFormat('Y-m-d H:i:s',$val->datetime);
-                                    $start = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['start']);
-                                    $end = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['end']);
+                                    // $time = DateTime::createFromFormat('Y-m-d H:i',$val->datetime);
+                                    // $start = DateTime::createFromFormat('Y-m-d H:i',date2Sql($val->datetime)." ".$range['start']);
+                                    // $end = DateTime::createFromFormat('Y-m-d H:i',date2Sql($val->datetime)." ".$range['end']);
+                                    $time = date('Y-m-d H:i',strtotime($val->datetime));
+                                    $start = date('Y-m-d H:i',strtotime(date2Sql($val->datetime)." ".$range['start']));
+                                    $end = date('Y-m-d H:i',strtotime(date2Sql($val->datetime)." ".$range['end']));
                                     if($time >= $start && $time <= $end){
                                         $guest += $val->guest;
                                         $trans_cnt += 1;
                                     }
                                 }else if($val->type_id == 11){
                                     // void trans
-                                    $time = DateTime::createFromFormat('Y-m-d H:i:s',$val->datetime);
-                                    $start = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['start']);
-                                    $end = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['end']);
+                                    // $time = DateTime::createFromFormat('Y-m-d H:i',$val->datetime);
+                                    // $start = DateTime::createFromFormat('Y-m-d H:i',date2Sql($val->datetime)." ".$range['start']);
+                                    // $end = DateTime::createFromFormat('Y-m-d H:i',date2Sql($val->datetime)." ".$range['end']);
+                                    $time = date('Y-m-d H:i',strtotime($val->datetime));
+                                    $start = date('Y-m-d H:i',strtotime(date2Sql($val->datetime)." ".$range['start']));
+                                    $end = date('Y-m-d H:i',strtotime(date2Sql($val->datetime)." ".$range['end']));
                                     if($time >= $start && $time <= $end){
                                         // $guest += $val->guest;
                                         $trans_cnt += 1;
@@ -8398,9 +8452,12 @@ class Reads extends Prints {
                             }
 
                             foreach ($trans['sales']['void']['orders'] as $val) {
-                                $time = DateTime::createFromFormat('Y-m-d H:i:s',$val->datetime);
-                                $start = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['start']);
-                                $end = DateTime::createFromFormat('Y-m-d H:i:s',date2Sql($val->datetime)." ".$range['end']);
+                                // $time = DateTime::createFromFormat('Y-m-d H:i',$val->datetime);
+                                // $start = DateTime::createFromFormat('Y-m-d H:i',date2Sql($val->datetime)." ".$range['start']);
+                                // $end = DateTime::createFromFormat('Y-m-d H:i',date2Sql($val->datetime)." ".$range['end']);
+                                $time = date('Y-m-d H:i',strtotime($val->datetime));
+                                $start = date('Y-m-d H:i',strtotime(date2Sql($val->datetime)." ".$range['start']));
+                                $end = date('Y-m-d H:i',strtotime(date2Sql($val->datetime)." ".$range['end']));
                                 if($time >= $start && $time <= $end){
                                     $cancel_cnt += 1;
                                     $cancel_amt += $val->total_amount;
@@ -8496,9 +8553,12 @@ class Reads extends Prints {
                         $str .= "09".$total_trans_cnt.$dlmtr;
                         $str .= "10".$total_guest;
                     }
-                    $hrlyfile = "H".substr($tenant_code,0,4).TERMINAL_NUMBER.$gts['ctr'].".".$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
+                    $hrlyfile = "H".substr($tenant_code,0,4).TERMINAL_NUMBER."1.".$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
                     // $hrlyfile = "H".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).$eod_ctr.".".$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
-                    $this->write_file($file_path.$hrlyfile,$str);
+                    if($see_server){
+                        $this->write_file($file_path.$hrlyfile,$str);
+                    }
+                    $this->write_file($file_path_bu.$hrlyfile,$str);
                 ###################################################################################################################################
                 ### DISCOUNT FILE
                     $str = "";
@@ -8606,11 +8666,27 @@ class Reads extends Prints {
                     $str .= "20".$total_guest.$dlmtr;
                     $str .= "21".$eod['ctr'].$dlmtr;
                     $str .= "22".$total_trans_cnt.$dlmtr;
-                    $str .= "23".$sales_type.$dlmtr;
-                    $str .= "24".numNoDot(numInt($total_net));
-                    $dailyfile = "S".substr($tenant_code,0,4).TERMINAL_NUMBER.$gts['ctr'].".".$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
+
+                    ksort($sales_type_total);
+                    $acount = count($sales_type_total);
+                    $actr = 1;
+                    foreach($sales_type_total as $ctype => $vald){
+                        $str .= "23".$ctype.$dlmtr;
+                        if($actr == $acount){
+                            $str .= "24".numNoDot(numInt($vald['tamount']));
+                        }else{
+                            $str .= "24".numNoDot(numInt($vald['tamount'])).$dlmtr;
+                        }
+
+                        $actr++;
+                    }
+
+                    $dailyfile = "S".substr($tenant_code,0,4).TERMINAL_NUMBER."1.".$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
                     // $dailyfile = "S".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).$eod_ctr.".".$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
-                    $this->write_file($file_path.$dailyfile,$str);
+                    if($see_server){
+                        $this->write_file($file_path.$dailyfile,$str);
+                    }
+                    $this->write_file($file_path_bu.$dailyfile,$str);
                 ###################################################################################################################################
                 // update for main
                 $this->site_model->db = $this->load->database('main', TRUE);
@@ -8638,66 +8714,66 @@ class Reads extends Prints {
                     // $file_txt_pt = "L".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).'.'.$mon[date('m',strtotime($sel_date))].date('d',strtotime($sel_date));
                     $text_pt = $file_path."/".$file_txt_pt;
 
-                    if (file_exists($text_pt)) {
-                        // echo "The file $filename exists";
-                        // die();
+                    // if (file_exists($text_pt)) {
+                    //     // echo "The file $filename exists";
+                    //     // die();
 
-                        $fd=fopen($text_pt,"r");
-                        $textFileContents=fread($fd,filesize($text_pt));
-                        // $textFileContents=$textFileContents.$dlmtr;
+                    //     $fd=fopen($text_pt,"r");
+                    //     $textFileContents=fread($fd,filesize($text_pt));
+                    //     // $textFileContents=$textFileContents.$dlmtr;
 
-                        //last data
-                        $last_data = "";
-                        //1 - 6
-                        $trans_date2 = date('m/d/Y',strtotime($zread['read_date']));
-                        $time = $this->site_model->get_db_now();
-                        $trans_time = date('H:i:s',strtotime($time));
-                        $last_data = commar($last_data,array($tenant_code,'00'.TERMINAL_NUMBER,$trans_date2,$trans_time,'00000000','00'));
-                        // 7
-                        $last_data = commar($last_data,0);
-                        // 8
-                        $last_data = commar($last_data,numInt(0));
-                        // 9
-                        $last_data = commar($last_data,numInt(0));
-                        //10
-                        $last_data = commar($last_data,numInt(0));
-                        //11 - 12
-                        $last_data = commar($last_data,array(numInt(0),numInt(0)));
-                        //13
-                        $last_data = commar($last_data,numInt(0));
-                        //14
-                        $last_data = commar($last_data,numInt(0));
-                        //15
-                        $last_data = commar($last_data,numInt(0));
-                        //16
-                        $last_data = commar($last_data,numInt(0));
-                        //17
-                        $last_data = commar($last_data,numInt(0));
-                        //18
-                        $last_data = commar($last_data,numInt(0));
-                        //19
-                        $last_data = commar($last_data,0);
-                        //20
-                        $last_data = commar($last_data,numInt(0));
-                        //21
-                        $last_data = commar($last_data,numInt(0));
-                        //22
-                        $last_data = commar($last_data,numInt(0));
-                        //23
-                        $last_data = commar($last_data,'1');
+                    //     //last data
+                    //     $last_data = "";
+                    //     //1 - 6
+                    //     $trans_date2 = date('m/d/Y',strtotime($zread['read_date']));
+                    //     $time = $this->site_model->get_db_now();
+                    //     $trans_time = date('H:i:s',strtotime($time));
+                    //     $last_data = commar($last_data,array($tenant_code,'00'.TERMINAL_NUMBER,$trans_date2,$trans_time,'00000000','00'));
+                    //     // 7
+                    //     $last_data = commar($last_data,0);
+                    //     // 8
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     // 9
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //10
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //11 - 12
+                    //     $last_data = commar($last_data,array(numInt(0),numInt(0)));
+                    //     //13
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //14
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //15
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //16
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //17
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //18
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //19
+                    //     $last_data = commar($last_data,0);
+                    //     //20
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //21
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //22
+                    //     $last_data = commar($last_data,numInt(0));
+                    //     //23
+                    //     $last_data = commar($last_data,'1');
 
-                        $last_data = substr($last_data,0,-1);
+                    //     $last_data = substr($last_data,0,-1);
 
 
 
-                        $newdata = $textFileContents.$last_data;
+                    //     $newdata = $textFileContents.$last_data;
 
-                        $fp = fopen($text_pt, "w+");
-                        fwrite($fp,$newdata);
-                        fclose($fp);
-                        // echo $textFileContents;
+                    //     $fp = fopen($text_pt, "w+");
+                    //     fwrite($fp,$newdata);
+                    //     fclose($fp);
+                    //     // echo $textFileContents;
                         
-                    }
+                    // }
 
                 }
 
@@ -8724,7 +8800,8 @@ class Reads extends Prints {
                 $mgm = $mgms[0];            
             }
             $tenant_code = $mgm->tenant_code;
-            $filepath = $mgm->file_path;
+            // $filepath = $mgm->file_path;
+            $filepath = 'C:/MIAA/';
             $sales_type = $mgm->sales_type;
             $d = date('d',strtotime($read_date));
             $mon = array('01'=>'1','02'=>'2','03'=>'3','04'=>'4','05'=>'5','06'=>'6','07'=>'7','08'=>'8','09'=>'9','10'=>'A','11'=>'B','12'=>'C');
@@ -8879,8 +8956,21 @@ class Reads extends Prints {
                         $t_amount = $val->total_paid;
                         $net = $val->total_paid;
 
+                        $is_item_disc = false;
+                        $total_disc_sid = 0;
+                        if($sales_discs){
+                            foreach ($sales_discs as $disc) {
+                                $total_disc_sid += round($disc->amount,2);
+                                if($disc->items != ""){
+                                    $is_item_disc = true;
+                                }
+                            }
+                        }
+
+
                         $mctr = 1;
                         $menu_count = count($menus);
+                        $total_disc_per_menu = 0;
                         foreach ($menus as $mn) {
                             // if($val->sales_id == $mn->sales_id){
                                 // $price = $mn->price;
@@ -8901,12 +8991,12 @@ class Reads extends Prints {
                                 $gross = $mn->price * $mn->qty;
 
                                 $zero_r = 0;
-                                foreach($sales_zero_rated as $zero){
-                                    if($zero->amount != 0){
-                                        $gross = $gross / 1.12;
-                                        $zero_r = 1;
-                                    }
-                                }
+                                // foreach($sales_zero_rated as $zero){
+                                //     if($zero->amount != 0){
+                                //         $gross = $gross / 1.12;
+                                //         $zero_r = 1;
+                                //     }
+                                // }
 
 
                                 $discount = 0;
@@ -8916,48 +9006,178 @@ class Reads extends Prints {
                                 $less_vat = 0;
                                 if($sales_discs){
                                     foreach ($sales_discs as $disc) {
-                                        $guest = $disc->guest;
-                                        $rate = $disc->disc_rate;
+                                        if($is_item_disc){
+                                            if($disc->items == $mn->line_id && $disc->sales_id == $mn->sales_id){
+                                                $guest = $disc->guest;
+                                                // $rate = $disc->disc_rate;
 
-                                        if($disc->type == 'equal'){
+                                                $divi = $gross;
+                                                $divi_less = $divi;
+                                                $lv = 0;
+                                                if($disc->no_tax == 1){
+                                                    $divi_less = ($divi / 1.12);
+                                                    $lv = $divi - $divi_less;
 
-                                            $divi = $gross/$guest;
-                                            $divi_less = $divi;
-                                            $lv = 0;
-                                            if($disc->no_tax == 1){
-                                                $divi_less = ($divi / 1.12);
-                                                $lv = $divi - $divi_less;
+                                                    $discount = round($disc->amount,2);
+                                                    $less_vat = $lv;
+
+                                                    //pang balance
+                                                    $total_disc_per_menu += $discount;
+
+                                                    if($menu_count == $mctr){
+                                                        if($total_disc_per_menu != $total_disc_sid){
+                                                            $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                            // echo $discount." ----- ".$d_variance."<br>";
+                                                            $discount = $discount + $d_variance;
+                                                            // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                            // echo $d_variance;
+                                                        }
+                                                    }
+
+                                                    $vat = 0;
+                                                    $tax_sales = 0;
+                                                    $ntax_sales = $divi - $discount - $less_vat;
+
+                                                }else{
+
+                                                    $discount = round($disc->amount,2);
+                                                    $less_vat = $lv;
+
+                                                    //pang balance
+                                                    $total_disc_per_menu += $discount;
+
+                                                    if($menu_count == $mctr){
+                                                        if($total_disc_per_menu != $total_disc_sid){
+                                                            $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                            // echo $discount." ----- ".$d_variance."<br>";
+                                                            $discount = $discount + $d_variance;
+                                                            // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                            // echo $d_variance;
+                                                        }
+                                                    }
+
+                                                    $vat1 = $divi / 1.12;
+                                                    $vatss = ($vat1 * 0.12);
+
+                                                    $vat = $vatss;
+                                                    $tax_sales = $divi;
+                                                    $ntax_sales = 0;
+                                                }
+
+
+                                            }else{
+                                                $vat = ($gross / 1.12) * 0.12;
+                                                $tax_sales = $gross;
+                                                $ntax_sales = 0;
                                             }
 
-                                            $no_persons = count($sales_discs);
-                                            $discount = (($rate / 100) * $divi_less) * $no_persons;
-                                            $less_vat = $lv * $no_persons;
-
-                                            //for vat
-                                            $vno_person = $guest - $no_persons;
-                                            $tl = $divi * $vno_person;
-                                            $vat1 = $tl / 1.12;
-                                            $vatss = ($vat1 * 0.12);
-
-                                            $vat = $vatss;
-
-                                            $tax_sales = $divi * $vno_person;
-                                            $ntax_sales = ($divi * $no_persons) - $discount - $less_vat;
-
                                         }else{
-                                            $no_persons = count($sales_discs);
-                                            $total = $gross;
-                                            if($disc->no_tax == 1)
-                                                $total = ($gross / 1.12);                     
-                                            
-                                            $discount = (($rate / 100) * $total) * $no_persons;
-                                            $vat = (($gross - $discount) / 1.12) * 0.12;
-                                            $tax_sales = $gross - $discount;
-                                            $ntax_sales = 0;
+
+                                            $guest = $disc->guest;
+                                            $rate = $disc->disc_rate;
+
+                                            if($disc->type == 'equal'){
+
+                                                $divi = $gross/$guest;
+                                                $divi_less = $divi;
+                                                $lv = 0;
+                                                if($disc->no_tax == 1){
+                                                    $divi_less = round($divi / 1.12,2);
+                                                    $lv = $divi - $divi_less;
+
+
+                                                    $no_persons = count($sales_discs);
+                                                    $discount = round((($rate / 100) * $divi_less) * $no_persons,2);
+                                                    $less_vat = $lv * $no_persons;
+
+                                                    //pang balance
+                                                    $total_disc_per_menu += $discount;
+
+                                                    if($menu_count == $mctr){
+                                                        if($total_disc_per_menu != $total_disc_sid){
+                                                            $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                            // echo $discount." ----- ".$d_variance."<br>";
+                                                            $discount = $discount + $d_variance;
+                                                            // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                            // echo $d_variance;
+                                                        }
+                                                    }
+
+                                                    //for vat
+                                                    $vno_person = $guest - $no_persons;
+                                                    $tl = $divi * $vno_person;
+                                                    $vat1 = $tl / 1.12;
+                                                    $vatss = ($vat1 * 0.12);
+
+                                                    $vat = $vatss;
+
+                                                    $tax_sales = $divi * $vno_person;
+                                                    $ntax_sales = ($divi * $no_persons) - $discount - $less_vat;
+                                                }else{
+                                                    $no_persons = count($sales_discs);
+                                                    $total = $gross;
+                                                    if($disc->no_tax == 1){
+                                                        $total = ($gross / 1.12);
+                                                    }
+
+                                                    $discount = (($rate / 100) * $total) * $no_persons;
+
+                                                    //pang balance
+                                                    $total_disc_per_menu += $discount;
+
+                                                    if($menu_count == $mctr){
+                                                        if($total_disc_per_menu != $total_disc_sid){
+                                                            $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                            // echo $discount." ----- ".$d_variance."<br>";
+                                                            $discount = $discount + $d_variance;
+                                                            // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                            // echo $d_variance;
+                                                        }
+                                                    }
+
+
+                                                    $vat = (($gross - $discount) / 1.12) * 0.12;
+                                                    $tax_sales = $gross - $discount;
+                                                    $ntax_sales = 0;
+
+                                                    // echo $disc->sales_id."-----".$ntax_sales;
+                                                }
+
+
+                                            }else{
+                                                // $no_persons = count($sales_discs);
+                                                // $total = $gross;
+                                                // if($disc->no_tax == 1)
+                                                //     $total = ($gross / 1.12);                     
+                                                
+                                                // $discount = round((($rate / 100) * $total) * $no_persons,2);
+                                                $discount = round($disc->amount / $menu_count,2);
+
+                                                //pang balance
+                                                $total_disc_per_menu += $discount;
+
+                                                if($menu_count == $mctr){
+                                                    if($total_disc_per_menu != $total_disc_sid){
+                                                        $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                        // echo $discount." ----- ".$d_variance."<br>";
+                                                        $discount = $discount + $d_variance;
+                                                        // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                        // echo $d_variance;
+                                                    }
+                                                }
+
+                                                $vat = (($gross - $discount) / 1.12) * 0.12;
+                                                $tax_sales = $gross - $discount;
+                                                $ntax_sales = 0;
+                                            }
+
                                         }
+
+                                        
 
                                         // break;   
                                     }
+
                                 }else{
                                     if($zero_r == 1){
                                         $vat = 0;
@@ -9119,8 +9339,21 @@ class Reads extends Prints {
                         $t_amount = $val->total_paid;
                         $net = $val->total_paid;
 
+                        $is_item_disc = false;
+                        $total_disc_sid = 0;
+                        if($sales_discs){
+                            foreach ($sales_discs as $disc) {
+                                $total_disc_sid += round($disc->amount,2);
+                                if($disc->items != ""){
+                                    $is_item_disc = true;
+                                }
+                            }
+                        }
+
+
                         $mctr = 1;
                         $menu_count = count($menus);
+                        $total_disc_per_menu = 0;
                         foreach ($menus as $mn) {
                             // if($val->sales_id == $mn->sales_id){
                                 // $price = $mn->price;
@@ -9143,51 +9376,190 @@ class Reads extends Prints {
                             $lv = 0;
                             $vat_ex = 0;
                             $vat = 0;
+                            $less_vat = 0;
                             if($sales_discs){
                                 foreach ($sales_discs as $disc) {
-                                    $guest = $disc->guest;
-                                    $rate = $disc->disc_rate;
+                                    if($is_item_disc){
+                                        if($disc->items == $mn->line_id && $disc->sales_id == $mn->sales_id){
+                                            $guest = $disc->guest;
+                                            // $rate = $disc->disc_rate;
 
-                                    if($disc->type == 'equal'){
+                                            $divi = $gross;
+                                            $divi_less = $divi;
+                                            $lv = 0;
+                                            if($disc->no_tax == 1){
+                                                $divi_less = ($divi / 1.12);
+                                                $lv = $divi - $divi_less;
 
-                                        $divi = $gross/$guest;
-                                        $divi_less = $divi;
-                                        $lv = 0;
-                                        if($disc->no_tax == 1){
-                                            $divi_less = ($divi / 1.12);
-                                            $lv = $divi - $divi_less;
+                                                $discount = round($disc->amount,2);
+                                                $less_vat = $lv;
+
+                                                //pang balance
+                                                $total_disc_per_menu += $discount;
+
+                                                if($menu_count == $mctr){
+                                                    if($total_disc_per_menu != $total_disc_sid){
+                                                        $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                        // echo $discount." ----- ".$d_variance."<br>";
+                                                        $discount = $discount + $d_variance;
+                                                        // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                        // echo $d_variance;
+                                                    }
+                                                }
+
+                                                $vat = 0;
+                                                $tax_sales = 0;
+                                                $ntax_sales = $divi - $discount - $less_vat;
+
+                                            }else{
+
+                                                $discount = round($disc->amount,2);
+                                                $less_vat = $lv;
+
+                                                //pang balance
+                                                $total_disc_per_menu += $discount;
+
+                                                if($menu_count == $mctr){
+                                                    if($total_disc_per_menu != $total_disc_sid){
+                                                        $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                        // echo $discount." ----- ".$d_variance."<br>";
+                                                        $discount = $discount + $d_variance;
+                                                        // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                        // echo $d_variance;
+                                                    }
+                                                }
+
+                                                $vat1 = $divi / 1.12;
+                                                $vatss = ($vat1 * 0.12);
+
+                                                $vat = $vatss;
+                                                $tax_sales = $divi;
+                                                $ntax_sales = 0;
+                                            }
+                                            
+                                        }else{
+                                            $vat = ($gross / 1.12) * 0.12;
+                                            $tax_sales = $gross;
+                                            $ntax_sales = 0;
                                         }
 
-                                        $no_persons = count($sales_discs);
-                                        $discount = (($rate / 100) * $divi_less) * $no_persons;
-                                        $less_vat = $lv * $no_persons;
-
-                                        //for vat
-                                        $vno_person = $guest - $no_persons;
-                                        $tl = $divi * $vno_person;
-                                        $vat1 = $tl / 1.12;
-                                        $vatss = ($vat1 * 0.12);
-
-                                        $vat = $vatss;
-
-                                        $tax_sales = $divi * $vno_person;
-                                        $ntax_sales = $divi * $no_persons;
-
                                     }else{
-                                        $no_persons = count($sales_discs);
-                                        if($disc->no_tax == 1)
-                                            $total = ($gross / 1.12);                     
-                                        
-                                        $discount = (($rate / 100) * $total) * $no_persons;
-                                        $vat = ($gross / 1.12) * 0.12;
-                                        $tax_sales = $gross;
-                                        $ntax_sales = 0;
-                                    }   
+
+                                        $guest = $disc->guest;
+                                        $rate = $disc->disc_rate;
+
+                                        if($disc->type == 'equal'){
+
+                                            $divi = $gross/$guest;
+                                            $divi_less = $divi;
+                                            $lv = 0;
+                                            if($disc->no_tax == 1){
+                                                $divi_less = round($divi / 1.12,2);
+                                                $lv = $divi - $divi_less;
+
+
+                                                $no_persons = count($sales_discs);
+                                                $discount = round((($rate / 100) * $divi_less) * $no_persons,2);
+                                                $less_vat = $lv * $no_persons;
+
+                                                //pang balance
+                                                $total_disc_per_menu += $discount;
+
+                                                if($menu_count == $mctr){
+                                                    if($total_disc_per_menu != $total_disc_sid){
+                                                        $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                        // echo $discount." ----- ".$d_variance."<br>";
+                                                        $discount = $discount + $d_variance;
+                                                        // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                        // echo $d_variance;
+                                                    }
+                                                }
+
+                                                //for vat
+                                                $vno_person = $guest - $no_persons;
+                                                $tl = $divi * $vno_person;
+                                                $vat1 = $tl / 1.12;
+                                                $vatss = ($vat1 * 0.12);
+
+                                                $vat = $vatss;
+
+                                                $tax_sales = $divi * $vno_person;
+                                                $ntax_sales = ($divi * $no_persons) - $discount - $less_vat;
+                                            }else{
+                                                $no_persons = count($sales_discs);
+                                                $total = $gross;
+                                                if($disc->no_tax == 1){
+                                                    $total = ($gross / 1.12);
+                                                }
+
+                                                $discount = (($rate / 100) * $total) * $no_persons;
+
+                                                //pang balance
+                                                $total_disc_per_menu += $discount;
+
+                                                if($menu_count == $mctr){
+                                                    if($total_disc_per_menu != $total_disc_sid){
+                                                        $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                        // echo $discount." ----- ".$d_variance."<br>";
+                                                        $discount = $discount + $d_variance;
+                                                        // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                        // echo $d_variance;
+                                                    }
+                                                }
+
+
+                                                $vat = (($gross - $discount) / 1.12) * 0.12;
+                                                $tax_sales = $gross - $discount;
+                                                $ntax_sales = 0;
+
+                                                // echo $disc->sales_id."-----".$ntax_sales;
+                                            }
+
+
+                                        }else{
+                                            // $no_persons = count($sales_discs);
+                                            // $total = $gross;
+                                            // if($disc->no_tax == 1)
+                                            //     $total = ($gross / 1.12);                     
+                                            
+                                            // $discount = round((($rate / 100) * $total) * $no_persons,2);
+                                            $discount = round($disc->amount / $menu_count,2);
+
+                                            //pang balance
+                                            $total_disc_per_menu += $discount;
+
+                                            if($menu_count == $mctr){
+                                                if($total_disc_per_menu != $total_disc_sid){
+                                                    $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                    // echo $discount." ----- ".$d_variance."<br>";
+                                                    $discount = $discount + $d_variance;
+                                                    // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                    // echo $d_variance;
+                                                }
+                                            }
+
+                                            $vat = (($gross - $discount) / 1.12) * 0.12;
+                                            $tax_sales = $gross - $discount;
+                                            $ntax_sales = 0;
+                                        }
+
+                                    }
+
+                                    
+
+                                    // break;   
                                 }
+                                
                             }else{
-                                $vat = ($gross / 1.12) * 0.12;
-                                $tax_sales = $gross;
-                                $ntax_sales = 0;
+                                // if($zero_r == 1){
+                                //     $vat = 0;
+                                //     $tax_sales = 0;
+                                //     $ntax_sales = $gross;
+                                // }else{
+                                    $vat = ($gross / 1.12) * 0.12;
+                                    $tax_sales = $gross;
+                                    $ntax_sales = 0;                                        
+                                // }
                             }
 
 
@@ -9253,7 +9625,7 @@ class Reads extends Prints {
                                 $trans_time = date('H:i:s',strtotime($void_det[0]->update_date) + $mctr - 1);
                             }
                             // $ref = str_replace("V","",$invoice);
-                            $ref = $val->sales_id;
+                            $ref = $void_det[0]->sales_id;
                             $print_str = commar($print_str,array($tenant_code,'00'.TERMINAL_NUMBER,$trans_date,$trans_time,$ref,$cat_type));
                             // 7
                             $print_str = commar($print_str,$mn->qty);
@@ -9368,6 +9740,7 @@ class Reads extends Prints {
         }
 
         public function miaa_file_regen($read_date=null,$curr=false){ 
+            sess_clear('sales_type_total');
             $mgms = $this->site_model->get_tbl('miaa');
             $dlmtr = "\r\n";
             $mgm = array();
@@ -9376,19 +9749,27 @@ class Reads extends Prints {
             }
             $tenant_code = $mgm->tenant_code;
             $filepath = $mgm->file_path;
+            $filepath_bu = 'C:/MIAA/';
             $sales_type = $mgm->sales_type;
             $d = date('d',strtotime($read_date));
             $mon = array('01'=>'1','02'=>'2','03'=>'3','04'=>'4','05'=>'5','06'=>'6','07'=>'7','08'=>'8','09'=>'9','10'=>'A','11'=>'B','12'=>'C');
             // $file_txt = "L".substr($tenant_code,0,4).substr(TERMINAL_NUMBER,2,2).'.'.$mon[date('m',strtotime($read_date))].date('d',strtotime($read_date));
             $file_txt = "L".substr($tenant_code,0,4).TERMINAL_NUMBER.'.'.$mon[date('m',strtotime($read_date))].date('d',strtotime($read_date));
 
+            $see_server = true;
+
+            $pertype_total = array();
+
             $year = date('Y',strtotime($read_date));
             $month = date('M',strtotime($read_date));
             if (!file_exists($filepath)) {   
-                mkdir($filepath, 0777, true);
+                // mkdir($filepath, 0777, true);
+                $see_server = false;
+                site_alert('Can not connect to the server. Please manually copt textfile from backup folder in C:/MIAA','error');
             }
             
             $text = $filepath."/".$file_txt;
+            $text_bu = $filepath_bu."/".$file_txt;
 
 
 
@@ -9417,7 +9798,7 @@ class Reads extends Prints {
             $args['trans_sales.datetime <= '] = $pos_end;
             $args["trans_sales.trans_ref  IS NOT NULL"] = array('use'=>'where','val'=>null,'third'=>false);
             // $args['trans_sales.sales_id'] = $sales_id;   
-            $trans = $this->trans_sales_miaa($args,$curr);
+            $trans = $this->trans_sales_miaa($args,false);
             $sales = $trans['sales'];
             // echo '<pre>',print_r($trans),'</pre>';
             // die();
@@ -9535,8 +9916,21 @@ class Reads extends Prints {
                             $t_amount = $val->total_paid;
                             $net = $val->total_paid;
 
+                            $is_item_disc = false;
+                            $total_disc_sid = 0;
+                            if($sales_discs){
+                                foreach ($sales_discs as $disc) {
+                                    $total_disc_sid += round($disc->amount,2);
+                                    if($disc->items != ""){
+                                        $is_item_disc = true;
+                                    }
+                                }
+                            }
+
+
                             $mctr = 1;
                             $menu_count = count($menus);
+                            $total_disc_per_menu = 0;
                             foreach ($menus as $mn) {
                                 // if($val->sales_id == $mn->sales_id){
                                     // $price = $mn->price;
@@ -9557,12 +9951,12 @@ class Reads extends Prints {
                                     $gross = $mn->price * $mn->qty;
 
                                     $zero_r = 0;
-                                    foreach($sales_zero_rated as $zero){
-                                        if($zero->amount != 0){
-                                            $gross = $gross / 1.12;
-                                            $zero_r = 1;
-                                        }
-                                    }
+                                    // foreach($sales_zero_rated as $zero){
+                                    //     if($zero->amount != 0){
+                                    //         $gross = $gross / 1.12;
+                                    //         $zero_r = 1;
+                                    //     }
+                                    // }
 
 
                                     $discount = 0;
@@ -9572,48 +9966,178 @@ class Reads extends Prints {
                                     $less_vat = 0;
                                     if($sales_discs){
                                         foreach ($sales_discs as $disc) {
-                                            $guest = $disc->guest;
-                                            $rate = $disc->disc_rate;
+                                            if($is_item_disc){
+                                                if($disc->items == $mn->line_id && $disc->sales_id == $mn->sales_id){
+                                                    $guest = $disc->guest;
+                                                    // $rate = $disc->disc_rate;
 
-                                            if($disc->type == 'equal'){
+                                                    $divi = $gross;
+                                                    $divi_less = $divi;
+                                                    $lv = 0;
+                                                    if($disc->no_tax == 1){
+                                                        $divi_less = ($divi / 1.12);
+                                                        $lv = $divi - $divi_less;
 
-                                                $divi = $gross/$guest;
-                                                $divi_less = $divi;
-                                                $lv = 0;
-                                                if($disc->no_tax == 1){
-                                                    $divi_less = ($divi / 1.12);
-                                                    $lv = $divi - $divi_less;
+                                                        $discount = round($disc->amount,2);
+                                                        $less_vat = $lv;
+
+                                                        //pang balance
+                                                        $total_disc_per_menu += $discount;
+
+                                                        if($menu_count == $mctr){
+                                                            if($total_disc_per_menu != $total_disc_sid){
+                                                                $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                                // echo $discount." ----- ".$d_variance."<br>";
+                                                                $discount = $discount + $d_variance;
+                                                                // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                                // echo $d_variance;
+                                                            }
+                                                        }
+
+                                                        $vat = 0;
+                                                        $tax_sales = 0;
+                                                        $ntax_sales = $divi - $discount - $less_vat;
+
+                                                    }else{
+
+                                                        $discount = round($disc->amount,2);
+                                                        $less_vat = $lv;
+
+                                                        //pang balance
+                                                        $total_disc_per_menu += $discount;
+
+                                                        if($menu_count == $mctr){
+                                                            if($total_disc_per_menu != $total_disc_sid){
+                                                                $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                                // echo $discount." ----- ".$d_variance."<br>";
+                                                                $discount = $discount + $d_variance;
+                                                                // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                                // echo $d_variance;
+                                                            }
+                                                        }
+
+                                                        $vat1 = $divi / 1.12;
+                                                        $vatss = ($vat1 * 0.12);
+
+                                                        $vat = $vatss;
+                                                        $tax_sales = $divi;
+                                                        $ntax_sales = 0;
+                                                    }
+
+
+                                                }else{
+                                                    $vat = ($gross / 1.12) * 0.12;
+                                                    $tax_sales = $gross;
+                                                    $ntax_sales = 0;
                                                 }
 
-                                                $no_persons = count($sales_discs);
-                                                $discount = (($rate / 100) * $divi_less) * $no_persons;
-                                                $less_vat = $lv * $no_persons;
-
-                                                //for vat
-                                                $vno_person = $guest - $no_persons;
-                                                $tl = $divi * $vno_person;
-                                                $vat1 = $tl / 1.12;
-                                                $vatss = ($vat1 * 0.12);
-
-                                                $vat = $vatss;
-
-                                                $tax_sales = $divi * $vno_person;
-                                                $ntax_sales = ($divi * $no_persons) - $discount - $less_vat;
-
                                             }else{
-                                                $no_persons = count($sales_discs);
-                                                $total = $gross;
-                                                if($disc->no_tax == 1)
-                                                    $total = ($gross / 1.12);                     
-                                                
-                                                $discount = (($rate / 100) * $total) * $no_persons;
-                                                $vat = (($gross - $discount) / 1.12) * 0.12;
-                                                $tax_sales = $gross - $discount;
-                                                $ntax_sales = 0;
+
+                                                $guest = $disc->guest;
+                                                $rate = $disc->disc_rate;
+
+                                                if($disc->type == 'equal'){
+
+                                                    $divi = $gross/$guest;
+                                                    $divi_less = $divi;
+                                                    $lv = 0;
+                                                    if($disc->no_tax == 1){
+                                                        $divi_less = round($divi / 1.12,2);
+                                                        $lv = $divi - $divi_less;
+
+
+                                                        $no_persons = count($sales_discs);
+                                                        $discount = round((($rate / 100) * $divi_less) * $no_persons,2);
+                                                        $less_vat = $lv * $no_persons;
+
+                                                        //pang balance
+                                                        $total_disc_per_menu += $discount;
+
+                                                        if($menu_count == $mctr){
+                                                            if($total_disc_per_menu != $total_disc_sid){
+                                                                $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                                // echo $discount." ----- ".$d_variance."<br>";
+                                                                $discount = $discount + $d_variance;
+                                                                // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                                // echo $d_variance;
+                                                            }
+                                                        }
+
+                                                        //for vat
+                                                        $vno_person = $guest - $no_persons;
+                                                        $tl = $divi * $vno_person;
+                                                        $vat1 = $tl / 1.12;
+                                                        $vatss = ($vat1 * 0.12);
+
+                                                        $vat = $vatss;
+
+                                                        $tax_sales = $divi * $vno_person;
+                                                        $ntax_sales = ($divi * $no_persons) - $discount - $less_vat;
+                                                    }else{
+                                                        $no_persons = count($sales_discs);
+                                                        $total = $gross;
+                                                        if($disc->no_tax == 1){
+                                                            $total = ($gross / 1.12);
+                                                        }
+
+                                                        $discount = (($rate / 100) * $total) * $no_persons;
+
+                                                        //pang balance
+                                                        $total_disc_per_menu += $discount;
+
+                                                        if($menu_count == $mctr){
+                                                            if($total_disc_per_menu != $total_disc_sid){
+                                                                $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                                // echo $discount." ----- ".$d_variance."<br>";
+                                                                $discount = $discount + $d_variance;
+                                                                // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                                // echo $d_variance;
+                                                            }
+                                                        }
+
+
+                                                        $vat = (($gross - $discount) / 1.12) * 0.12;
+                                                        $tax_sales = $gross - $discount;
+                                                        $ntax_sales = 0;
+
+                                                        // echo $disc->sales_id."-----".$ntax_sales;
+                                                    }
+
+
+                                                }else{
+                                                    // $no_persons = count($sales_discs);
+                                                    // $total = $gross;
+                                                    // if($disc->no_tax == 1)
+                                                    //     $total = ($gross / 1.12);                     
+                                                    
+                                                    // $discount = round((($rate / 100) * $total) * $no_persons,2);
+                                                    $discount = round($disc->amount / $menu_count,2);
+
+                                                    //pang balance
+                                                    $total_disc_per_menu += $discount;
+
+                                                    if($menu_count == $mctr){
+                                                        if($total_disc_per_menu != $total_disc_sid){
+                                                            $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                            // echo $discount." ----- ".$d_variance."<br>";
+                                                            $discount = $discount + $d_variance;
+                                                            // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                            // echo $d_variance;
+                                                        }
+                                                    }
+
+                                                    $vat = (($gross - $discount) / 1.12) * 0.12;
+                                                    $tax_sales = $gross - $discount;
+                                                    $ntax_sales = 0;
+                                                }
+
                                             }
+
+                                            
 
                                             // break;   
                                         }
+
                                     }else{
                                         if($zero_r == 1){
                                             $vat = 0;
@@ -9689,7 +10213,19 @@ class Reads extends Prints {
                                     }
 
 
+                                    // $tnet = numInt($gross + $charges - $vat - $discount - $less_vat);
+                                    if($val->inactive != 1){
+                                        if(isset($pertype_total[$cat_type])){
+                                            $row = $pertype_total[$cat_type];
+                                            $row['tamount'] += $to_pay;
+                                            $pertype_total[$cat_type] = $row;
+                                        }else{
+                                            $pertype_total[$cat_type] = array('tamount'=>$to_pay);
+                                        }
+                                    }
 
+                                    // echo $tnet;
+                                    // echo "<pre>",print_r($pertype_total),"</pre>";
 
 
                                     //1 - 6
@@ -9775,8 +10311,21 @@ class Reads extends Prints {
                             $t_amount = $val->total_paid;
                             $net = $val->total_paid;
 
+                            $is_item_disc = false;
+                            $total_disc_sid = 0;
+                            if($sales_discs){
+                                foreach ($sales_discs as $disc) {
+                                    $total_disc_sid += round($disc->amount,2);
+                                    if($disc->items != ""){
+                                        $is_item_disc = true;
+                                    }
+                                }
+                            }
+
+
                             $mctr = 1;
                             $menu_count = count($menus);
+                            $total_disc_per_menu = 0;
                             foreach ($menus as $mn) {
                                 // if($val->sales_id == $mn->sales_id){
                                     // $price = $mn->price;
@@ -9799,51 +10348,190 @@ class Reads extends Prints {
                                 $lv = 0;
                                 $vat_ex = 0;
                                 $vat = 0;
+                                $less_vat = 0;
                                 if($sales_discs){
                                     foreach ($sales_discs as $disc) {
-                                        $guest = $disc->guest;
-                                        $rate = $disc->disc_rate;
+                                        if($is_item_disc){
+                                            if($disc->items == $mn->line_id && $disc->sales_id == $mn->sales_id){
+                                                $guest = $disc->guest;
+                                                // $rate = $disc->disc_rate;
 
-                                        if($disc->type == 'equal'){
+                                                $divi = $gross;
+                                                $divi_less = $divi;
+                                                $lv = 0;
+                                                if($disc->no_tax == 1){
+                                                    $divi_less = ($divi / 1.12);
+                                                    $lv = $divi - $divi_less;
 
-                                            $divi = $gross/$guest;
-                                            $divi_less = $divi;
-                                            $lv = 0;
-                                            if($disc->no_tax == 1){
-                                                $divi_less = ($divi / 1.12);
-                                                $lv = $divi - $divi_less;
+                                                    $discount = round($disc->amount,2);
+                                                    $less_vat = $lv;
+
+                                                    //pang balance
+                                                    $total_disc_per_menu += $discount;
+
+                                                    if($menu_count == $mctr){
+                                                        if($total_disc_per_menu != $total_disc_sid){
+                                                            $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                            // echo $discount." ----- ".$d_variance."<br>";
+                                                            $discount = $discount + $d_variance;
+                                                            // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                            // echo $d_variance;
+                                                        }
+                                                    }
+
+                                                    $vat = 0;
+                                                    $tax_sales = 0;
+                                                    $ntax_sales = $divi - $discount - $less_vat;
+
+                                                }else{
+
+                                                    $discount = round($disc->amount,2);
+                                                    $less_vat = $lv;
+
+                                                    //pang balance
+                                                    $total_disc_per_menu += $discount;
+
+                                                    if($menu_count == $mctr){
+                                                        if($total_disc_per_menu != $total_disc_sid){
+                                                            $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                            // echo $discount." ----- ".$d_variance."<br>";
+                                                            $discount = $discount + $d_variance;
+                                                            // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                            // echo $d_variance;
+                                                        }
+                                                    }
+
+                                                    $vat1 = $divi / 1.12;
+                                                    $vatss = ($vat1 * 0.12);
+
+                                                    $vat = $vatss;
+                                                    $tax_sales = $divi;
+                                                    $ntax_sales = 0;
+                                                }
+                                                
+                                            }else{
+                                                $vat = ($gross / 1.12) * 0.12;
+                                                $tax_sales = $gross;
+                                                $ntax_sales = 0;
                                             }
 
-                                            $no_persons = count($sales_discs);
-                                            $discount = (($rate / 100) * $divi_less) * $no_persons;
-                                            $less_vat = $lv * $no_persons;
-
-                                            //for vat
-                                            $vno_person = $guest - $no_persons;
-                                            $tl = $divi * $vno_person;
-                                            $vat1 = $tl / 1.12;
-                                            $vatss = ($vat1 * 0.12);
-
-                                            $vat = $vatss;
-
-                                            $tax_sales = $divi * $vno_person;
-                                            $ntax_sales = $divi * $no_persons;
-
                                         }else{
-                                            $no_persons = count($sales_discs);
-                                            if($disc->no_tax == 1)
-                                                $total = ($gross / 1.12);                     
-                                            
-                                            $discount = (($rate / 100) * $total) * $no_persons;
-                                            $vat = ($gross / 1.12) * 0.12;
-                                            $tax_sales = $gross;
-                                            $ntax_sales = 0;
-                                        }   
+
+                                            $guest = $disc->guest;
+                                            $rate = $disc->disc_rate;
+
+                                            if($disc->type == 'equal'){
+
+                                                $divi = $gross/$guest;
+                                                $divi_less = $divi;
+                                                $lv = 0;
+                                                if($disc->no_tax == 1){
+                                                    $divi_less = round($divi / 1.12,2);
+                                                    $lv = $divi - $divi_less;
+
+
+                                                    $no_persons = count($sales_discs);
+                                                    $discount = round((($rate / 100) * $divi_less) * $no_persons,2);
+                                                    $less_vat = $lv * $no_persons;
+
+                                                    //pang balance
+                                                    $total_disc_per_menu += $discount;
+
+                                                    if($menu_count == $mctr){
+                                                        if($total_disc_per_menu != $total_disc_sid){
+                                                            $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                            // echo $discount." ----- ".$d_variance."<br>";
+                                                            $discount = $discount + $d_variance;
+                                                            // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                            // echo $d_variance;
+                                                        }
+                                                    }
+
+                                                    //for vat
+                                                    $vno_person = $guest - $no_persons;
+                                                    $tl = $divi * $vno_person;
+                                                    $vat1 = $tl / 1.12;
+                                                    $vatss = ($vat1 * 0.12);
+
+                                                    $vat = $vatss;
+
+                                                    $tax_sales = $divi * $vno_person;
+                                                    $ntax_sales = ($divi * $no_persons) - $discount - $less_vat;
+                                                }else{
+                                                    $no_persons = count($sales_discs);
+                                                    $total = $gross;
+                                                    if($disc->no_tax == 1){
+                                                        $total = ($gross / 1.12);
+                                                    }
+
+                                                    $discount = (($rate / 100) * $total) * $no_persons;
+
+                                                    //pang balance
+                                                    $total_disc_per_menu += $discount;
+
+                                                    if($menu_count == $mctr){
+                                                        if($total_disc_per_menu != $total_disc_sid){
+                                                            $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                            // echo $discount." ----- ".$d_variance."<br>";
+                                                            $discount = $discount + $d_variance;
+                                                            // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                            // echo $d_variance;
+                                                        }
+                                                    }
+
+
+                                                    $vat = (($gross - $discount) / 1.12) * 0.12;
+                                                    $tax_sales = $gross - $discount;
+                                                    $ntax_sales = 0;
+
+                                                    // echo $disc->sales_id."-----".$ntax_sales;
+                                                }
+
+
+                                            }else{
+                                                // $no_persons = count($sales_discs);
+                                                // $total = $gross;
+                                                // if($disc->no_tax == 1)
+                                                //     $total = ($gross / 1.12);                     
+                                                
+                                                // $discount = round((($rate / 100) * $total) * $no_persons,2);
+                                                $discount = round($disc->amount / $menu_count,2);
+
+                                                //pang balance
+                                                $total_disc_per_menu += $discount;
+
+                                                if($menu_count == $mctr){
+                                                    if($total_disc_per_menu != $total_disc_sid){
+                                                        $d_variance = round($total_disc_sid - $total_disc_per_menu,2);
+                                                        // echo $discount." ----- ".$d_variance."<br>";
+                                                        $discount = $discount + $d_variance;
+                                                        // echo $total_disc_sid." ----- ".$total_disc_per_menu."<br>";
+                                                        // echo $d_variance;
+                                                    }
+                                                }
+
+                                                $vat = (($gross - $discount) / 1.12) * 0.12;
+                                                $tax_sales = $gross - $discount;
+                                                $ntax_sales = 0;
+                                            }
+
+                                        }
+
+                                        
+
+                                        // break;   
                                     }
+                                    
                                 }else{
-                                    $vat = ($gross / 1.12) * 0.12;
-                                    $tax_sales = $gross;
-                                    $ntax_sales = 0;
+                                    // if($zero_r == 1){
+                                    //     $vat = 0;
+                                    //     $tax_sales = 0;
+                                    //     $ntax_sales = $gross;
+                                    // }else{
+                                        $vat = ($gross / 1.12) * 0.12;
+                                        $tax_sales = $gross;
+                                        $ntax_sales = 0;                                        
+                                    // }
                                 }
 
 
@@ -10022,6 +10710,8 @@ class Reads extends Prints {
 
             $print_str = $print_str.$last_data;
 
+            $this->session->set_userData('sales_type_total',$pertype_total);
+
 
             // echo 'asdfsdf'; die();
 
@@ -10065,9 +10755,15 @@ class Reads extends Prints {
                 
             // } else {
                 // echo "The file $filename does not exist";
-                $fp = fopen($text, "w+");
-                fwrite($fp,$print_str);
-                fclose($fp);
+                if($see_server){
+                    $fp = fopen($text, "w+");
+                    fwrite($fp,$print_str);
+                    fclose($fp);
+                }
+
+                $fp1 = fopen($text_bu, "w+");
+                fwrite($fp1,$print_str);
+                fclose($fp1);
             // }          
             
         }

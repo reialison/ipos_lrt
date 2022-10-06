@@ -1018,6 +1018,11 @@ class Cashier_Gift_Card extends Reads {
             $this->load->model('site/site_model');
             $this->load->model('dine/cashier_gift_card_model');
             $this->load->helper('dine/cashier_gift_card_helper');
+
+            $to_dec = str_replace('~~','%',$type);
+            $txts = rawurldecode($to_dec);
+            $type = $this->encrypt->decode($txts);
+            
             $data = $this->syter->spawn(null);
             $loaded = null;
             $order = array();
@@ -7847,7 +7852,7 @@ class Cashier_Gift_Card extends Reads {
                 //     $this->sync_model->delete_trans_sales_payments($payment_id); // delete in main before ot deletes on dine
                 //     $this->sync_model->update_trans_sales($sales_id);
                 // }                    
-                $this->cashier_gift_card_model->delete_trans_sales_payments($payment_id);
+                $this->cashier_gift_card_model->delete_trans_gc_payments($payment_id);
                 $payment = $this->get_order_payments(false,$sales_id);
                 $error = "";
                 $balance = 0;
@@ -7855,7 +7860,7 @@ class Cashier_Gift_Card extends Reads {
                 foreach ($payment as $payment_id => $pay) {
                     $total_paid += $pay['amount'];
                 }
-                $this->cashier_gift_card_model->update_trans_sales(array('total_paid'=>$total_paid),$sales_id);
+                $this->cashier_gift_card_model->update_trans_gc(array('total_paid'=>$total_paid),$sales_id);
                 echo json_encode(array('error'=>$error,'balance'=>$order['amount'] - $total_paid));
             }
         }
@@ -9912,7 +9917,7 @@ class Cashier_Gift_Card extends Reads {
                     // }            
                 }
             }else if(PRINT_VERSION && PRINT_VERSION == 'V3'){
-                $js_rcp = $this->html_print($print_str,true);
+                $js_rcp = $this->html_print($print_str);
 
                 $js_rcps[] = array('printer'=>BILLING_PRINTER,'value'=>$js_rcp);
 
@@ -24965,6 +24970,649 @@ class Cashier_Gift_Card extends Reads {
         return function ($a, $b) use ($key) {;
             return strnatcmp($a->$key, $b->$key);
         };
+    }
+
+    public function counter_trans_details(){
+            // if(LOCALSYNC){
+            //     $this->load->model('core/sync_model');
+            //  }
+            // echo "<pre>",print_r(sess('customer_name')),"</pre>";die();
+            $this->load->model('dine/cashier_gift_card_model');
+            $counter = sess('counter');
+            $trans_cart = sess('trans_cart');
+            $trans_mod_cart = sess('trans_mod_cart');
+            $trans_submod_cart = sess('trans_submod_cart');
+            $trans_type_cart = sess('trans_type_cart');
+            $trans_disc_cart = sess('trans_disc_cart');
+            $trans_charge_cart = sess('trans_charge_cart');
+            $loyalty_card = sess('loyalty_card');
+            $reasons = sess('reasons');
+            $item_discount = sess('item_discount');
+            $trans_customer_name = (!empty(sess('customer_name'))) ? sess('customer_name') : '';
+            $totals  = $this->total_trans(false,$trans_cart);
+            $total_amount = $totals['total'];
+            $total_gross = $totals['gross'];
+            $charges = $totals['charges'];
+            $local_tax = $totals['local_tax'];
+            $error = null;
+            $act = null;
+            $sales_id = null;
+            $type = null;
+            $type_id = SALES_TRANS;
+            $print_echo = array();
+            
+
+            $serve_no = 0;
+            if(isset($trans_type_cart[0]['serve_no'])){
+                $serve_no = $trans_type_cart[0]['serve_no'];
+            }
+
+            if(count($trans_cart) <= 0){
+                $error = "Error! There are no items.";
+            }
+            else if(count($counter) <= 0){
+                $error = "Error! Shift or User is invalid.";
+            }
+            // else if(NEED_FOOD_SERVER && !isset($counter['waiter_id']) && $counter['type'] != 'counter' && $counter['type'] != 'takeout'){
+            else if(NEED_FOOD_SERVER && !isset($counter['waiter_id']) && $counter['type'] == 'dinein'){
+                $error = "Select Food Server";
+            }
+            // else if(SERVER_NO_SETUP && $serve_no == 0 && $counter['type'] == 'counter' ){
+            //     $error = "Please Select Serve No.";
+            // }
+            // else if(SERVER_NO_SETUP && $serve_no == 0 && $counter['type'] == 'takeout' ){
+            //     $error = "Please Select Serve No.";
+            // }
+            else{
+                if(count($trans_disc_cart) > 0){
+                    foreach ($trans_disc_cart as $disc_id => $row) {
+                        if(!isset($row['disc_type'])){
+                            $error = "Select Discount Type. If equally Divided or All Items.";
+                        }
+                        else{
+                            if($row['disc_type'] == "")
+                                $error = "Select Discount Type. If equally Divided or All Items.";
+                        }
+                    }
+                    if($error != null){
+                        if($asJson){
+                            echo json_encode(array('error'=>$error,'act'=>$act,'id'=>$sales_id,'type'=>$type));
+                            return false;
+                        }
+                        else{
+                            return array('error'=>$error,'act'=>$act,'id'=>$sales_id,'type'=>$type);
+                        }
+                    }
+                }
+
+
+                
+                $type = $counter['type'];
+                #save sa trans_sales
+                $table = null;
+                $guest = 0;
+                
+                $customer = null;
+                if(isset($trans_type_cart[0]['table'])){
+                    $table = $trans_type_cart[0]['table'];
+                }
+                if(isset($trans_type_cart[0]['guest'])){
+                    $guest = $trans_type_cart[0]['guest'];
+                }
+                
+                if(count($trans_disc_cart) > 0){
+                    foreach ($trans_disc_cart as $disc_code => $dc) {
+                        $guest = $dc['guest'];
+                    }
+                } 
+                if(isset($trans_type_cart[0]['customer_id'])){
+                    $customer = $trans_type_cart[0]['customer_id'];
+                }
+                if(count($loyalty_card) > 0){
+                    foreach ($loyalty_card as $code => $row) {
+                        $customer = $row['cust_id'];
+                        // $loyalty = array(
+                        //     "cust_id" => $row['cust_id'],
+                        //     "code" => $row['code']
+                        // );
+                    }
+
+                }
+                $waiter = null;
+                if(isset($counter['waiter_id'])){
+                    $waiter = $counter['waiter_id'];
+                }
+
+              
+
+               
+                #save sa trans_sales_menus
+                $trans_sales_menu = array();
+                $trans_sales_items = array();
+                $total_gross = 0;
+                $alcohol = 0;
+
+                // echo "<pre>",print_r($trans_cart),"</pre>";die();
+
+                foreach ($trans_cart as $trans_id => $v) {
+
+                    if($v['qty'] == 0){ //if qty is zero skip the item to resolve the splitting 0 issue @jx10292019
+                        continue;
+                    }
+                    $remarks = $serial_key = null;
+                    $nocharge = 0;
+                    $rate = (isset($trans_disc_cart[$trans_id]['disc_percent'])) ?  $trans_disc_cart[$trans_id]['disc_percent'] : 0 ;
+                    $percent_disc = ($v['cost'] * $v['qty']) * ($rate / 100);
+                    $percent_abs = (isset($trans_disc_cart[$trans_id]['disc_absolute'])) ? $trans_disc_cart[$trans_id]['disc_absolute'] : 0;
+                    $total_disc = $percent_disc + $percent_abs;
+
+                   
+                    if(isset($v['nocharge']) && $v['nocharge'] != 0){
+                        $nocharge = $v['nocharge'];
+                    }
+                    if(isset($v['remarks']) && $v['remarks'] != ""){
+                        $remarks = $v['remarks'];
+                    }
+                    $kitchen_slip_printed=0;
+                    if(isset($v['kitchen_slip_printed']) && $v['kitchen_slip_printed'] != ""){
+                        $kitchen_slip_printed = $v['kitchen_slip_printed'];
+                    }
+                    $free = $free_reason = null;
+                    if(isset($v['free_user_id'])){
+                        $free = $v['free_user_id'];
+                    }
+
+                     if(isset($v['free_reason'])){
+                        $free_reason = $v['free_reason'];
+                    }
+                    
+
+                    if(!isset($v['retail'])){
+                        $where = array('menu_id'=>$v['menu_id']);
+                        $m_det = $this->site_model->get_details($where,'menus');
+
+                        
+                    }
+                    else{
+                        $where = array('item_id'=>$v['menu_id']);
+                        $i_det = $this->site_model->get_details($where,'items');
+
+                        
+                    }
+                    $total_gross += $v['qty'] *$v['cost'];
+
+                    $where = array('menu_id'=>$v['menu_id']);
+                    $men = $this->site_model->get_details($where,'menus');
+
+                    // if($men[0]->alcohol == 1){
+                    //     $alcohol += $v['qty'] *$v['cost'];
+                    // }
+
+                }
+                if(count($trans_sales_menu) > 0)
+                {
+                    // $trans_id = $this->cashier_model->add_trans_sales_menus($trans_sales_menu);
+                    //  if(LOCALSYNC){
+                    //     $this->sync_model->add_trans_sales_menus($sales_id);
+                    // }
+                }
+                
+                if(count($trans_sales_items) > 0)
+                {
+                    // $this->cashier_model->add_trans_sales_items($trans_sales_items);
+                    // if(LOCALSYNC){
+                    //     $this->sync_model->add_trans_sales_items($sales_id);
+                    // }
+                }
+                #save sa trans_sales_menu_modifiers
+                if(count($trans_mod_cart) > 0){
+                    $trans_sales_menu_modifiers = array();
+                    foreach ($trans_mod_cart as $trans_mod_id => $m) {
+                        $kitchen_slip_printed=0;
+                        if(isset($m['kitchen_slip_printed']) && $m['kitchen_slip_printed'] != ""){
+                            $kitchen_slip_printed = $m['kitchen_slip_printed'];
+                        }
+                        if(isset($trans_cart[$m['trans_id']])){
+                            //menu
+                            $where = array('menu_id'=>$m['menu_id']);
+                            $m_det = $this->site_model->get_details($where,'menus');
+
+                            //mod group
+                            $where = array('mod_group_id'=>$m['mod_group_id']);
+                            $mg_det = $this->site_model->get_details($where,'modifier_groups');
+
+                            //mod
+                            $where = array('mod_id'=>$m['mod_id']);
+                            $mod_det = $this->site_model->get_details($where,'modifiers');
+
+
+                           
+                            $total_gross += $m['qty'] *$m['cost'];
+
+                            // $where = array('menu_id'=>$v['menu_id']);
+                            // $men = $this->site_model->get_details($where,'menus');
+
+                            if($m_det[0]->alcohol == 1){
+                                $alcohol += $m['qty'] *$m['cost'];
+                            }
+
+                        }
+                    }
+                    if(count($trans_sales_menu_modifiers) > 0)
+                    {
+                        // $trans_id = $this->cashier_model->add_trans_sales_menu_modifiers($trans_sales_menu_modifiers);
+                        // if(LOCALSYNC){
+                        //     $this->sync_model->add_trans_sales_menu_modifiers($sales_id);
+                        // }
+                    }
+                }
+
+                #save sa trans_sales_menu_submodifiers
+                if(count($trans_submod_cart) > 0){
+                    $trans_sales_menu_submodifiers = array();
+                    foreach ($trans_submod_cart as $trans_submod_id => $m) {
+                        $kitchen_slip_printed=0;
+                        if(isset($m['kitchen_slip_printed']) && $m['kitchen_slip_printed'] != ""){
+                            $kitchen_slip_printed = $m['kitchen_slip_printed'];
+                        }
+                        if(isset($trans_cart[$m['trans_id']])){
+                            //menu
+                            $where = array('menu_id'=>$trans_cart[$m['trans_id']]['menu_id']);
+                            $m_det = $this->site_model->get_details($where,'menus');
+
+                            
+                            $total_gross += $m['qty'] *$m['price'];
+
+                            if($m_det[0]->alcohol == 1){
+                                $alcohol += $m['qty'] *$m['cost'];
+                            }
+                        }
+                    }
+                    if(count($trans_sales_menu_modifiers) > 0)
+                    {
+                        // $trans_id = $this->cashier_model->add_trans_sales_menu_submodifiers($trans_sales_menu_submodifiers);
+                        // if(LOCALSYNC){
+                        //     $this->sync_model->add_trans_sales_menu_modifiers($sales_id);
+                        // }
+                    }
+                }
+
+                if(count($item_discount) > 0){
+                    //for save sa trans_sales_discounts pero per item
+                    $trans_sales_disc_items = array();
+                    foreach($item_discount as $id => $dc){
+                        $lvat = 0;
+                        if($dc['no_tax'] == 1){
+                            $drate = $dc['disc_rate']/100;
+                            $for_lv = $dc['amount'] / $drate;
+
+                            $lvat = $for_lv * 0.12;
+                        }
+                        $total_disc += $dc['amount'] + $lvat;
+                        
+
+                    }
+                    
+                }else{
+                    #save sa trans_sales_discounts
+                    $total_disc = 0;
+                    if(count($trans_disc_cart) > 0){
+                        $trans_sales_disc_cart = array();
+                        $total = 0;
+                        foreach ($trans_cart as $trans_id => $trans){
+                            if(isset($trans['cost']))
+                                $cost = $trans['cost'];
+                            if(isset($trans['price']))
+                                $cost = $trans['price'];
+
+                            if(isset($trans['modifiers'])){
+                                foreach ($trans['modifiers'] as $trans_mod_id => $mod) {
+                                    if($trans_id == $mod['line_id'])
+                                        $cost += $mod['price'];
+                                }
+                            }
+
+                            else{
+                                if(count($trans_mod_cart) > 0){
+                                    foreach ($trans_mod_cart as $trans_mod_id => $mod) {
+                                        if($trans_id == $mod['trans_id'])
+                                            $cost += $mod['cost'];
+                                    }
+                                }
+                            }
+                            if(isset($counter['zero_rated']) && $counter['zero_rated'] == 1){
+                                $rate = 1.12;
+                                $cost = ($cost / $rate);
+                                if(isset($zero_rated)){
+                                    $zero_rated += $v['qty'] * $cost;
+                                }else{
+                                    $zero_rated = $v['qty'] * $cost;
+                                }
+                            }
+                            $total += $trans['qty'] * $cost;
+                        }
+
+                        foreach ($trans_disc_cart as $disc_id => $dc) {
+                            $dit = "";
+                            if(isset($dc['items'])){
+                                foreach ($dc['items'] as $lines) {
+                                    $dit .= $lines.",";
+                                }
+                                if($dit != "")
+                                    $dit = substr($dit,0,-1);                        
+                            }
+                            
+
+                            $discount = 0;
+                            $rate = $dc['disc_rate'];
+                            switch ($dc['disc_type']) {
+                                case "equal":
+                                    
+                                    if($dc['disc_code'] == 'SNDISC'){
+                                        $divi = ($total-$alcohol)/$dc['guest'];
+                                    }else{
+                                        $divi = $total/$dc['guest'];
+                                    }
+                                    $divi_less = $divi;
+
+                                    $where = array('id'=>1);
+                                    $set_det = $this->site_model->get_details($where,'settings');
+
+                                    if($counter['type'] != 'dinein' && $counter['type'] != 'mcb' && $dc['disc_code'] == 'SNDISC' && $divi > $set_det[0]->ceiling_amount && $set_det[0]->ceiling_amount > 0){
+                                        $divi = $set_det[0]->ceiling_amount;
+                                        $divi_less = $set_det[0]->ceiling_amount;
+                                    }
+
+                                    if($counter['type'] == 'mcb' && $dc['disc_code'] == 'SNDISC' && $divi > $set_det[0]->ceiling_mcb && $set_det[0]->ceiling_mcb > 0){
+                                        $divi = $set_det[0]->ceiling_mcb;
+                                        $divi_less = $set_det[0]->ceiling_mcb;
+                                    }
+
+                                    if($dc['disc_code'] == ATHLETE_CODE){
+                                        // if($dc['no_tax'] == 1){
+                                            $divi_less = ($divi / 1.12);
+                                        // }
+                                        $no_persons = count($dc['persons']);
+                                        // foreach ($row['persons'] as $code => $per) {
+                                        $discs[] = array('type'=>$dc['disc_code'],'amount'=>($rate / 100) * $divi_less);
+                                        $discount = ($rate / 100) * $divi_less;
+                                    }else{
+                                        if($dc['no_tax'] == 1){
+                                            $divi_less = ($divi / 1.12);
+                                        }
+                                        $no_persons = count($dc['persons']);
+                                        // foreach ($row['persons'] as $code => $per) {
+                                        $discs[] = array('type'=>$dc['disc_code'],'amount'=>($rate / 100) * $divi_less);
+                                        $discount = ($rate / 100) * $divi_less;
+                                    }
+
+                                    // }
+                                    // $total = ($divi * $row['guest']) - $discount;
+
+                                    break;
+                                default:
+                                    // $no_citizens = count($dc['persons']);
+                                    // if($dc['no_tax'] == 1)
+                                    //     $total = ($total / 1.12);                     
+                                    // $discs[] = array('type'=>$dc['disc_code'],'amount'=>($rate / 100) * $total);
+                                    // $discount = ($rate / 100) * $total;
+                                    if($dc['fix'] == 0){
+                                        if(DISCOUNT_NET_OF_VAT && $row['disc_code'] != DISCOUNT_NET_OF_VAT_EX){
+                                            $no_citizens = count($dc['persons']);
+                                            $total_net_vat = ($total / 1.12);                     
+                                            foreach ($dc['persons'] as $code => $per) {
+                                                $discs[] = array('type'=>$dc['disc_code'],'amount'=>($rate / 100) * $total_net_vat);
+                                                $discount += ($rate / 100) * $total_net_vat;
+                                            }
+                                            $total -= $discount; 
+                                        }
+                                        else{
+                                            $no_citizens = count($dc['persons']);
+
+                                            // echo $no_citizens; die();
+                                            if($dc['disc_code'] == ATHLETE_CODE){
+                                                // if($dc['no_tax'] == 1)
+                                                    $total = ($total / 1.12);                     
+                                                foreach ($dc['persons'] as $code => $per) {
+                                                    $discs[] = array('type'=>$dc['disc_code'],'amount'=>($rate / 100) * $total);
+                                                    $discount += ($rate / 100) * $total;
+                                                }
+                                            }else{
+                                                if($dc['no_tax'] == 1)
+                                                    $total = ($total / 1.12);                     
+                                                foreach ($dc['persons'] as $code => $per) {
+                                                    $discs[] = array('type'=>$dc['disc_code'],'amount'=>($rate / 100) * $total);
+                                                    $discount += ($rate / 100) * $total;
+                                                }
+                                            }
+
+                                            $total -= $discount;                                        
+                                        }    
+                                    }
+                                    else{
+                                        if($dc['openamt'] != 0){
+                                            $discs[] = array('type'=>$dc['disc_code'],'amount'=>$dc['openamt']);
+                                            $discount += $dc['openamt'];
+                                            $total -= $discount;
+                                        }else{
+                                            $discs[] = array('type'=>$dc['disc_code'],'amount'=>$rate);
+                                            $discount += $rate;
+                                            $total -= $discount;
+                                        }
+
+                                    }
+                                    // }    
+                            }
+                            foreach ($dc['persons'] as $pcode => $oper) {
+                                
+                                $total_disc += $discount;
+                            }
+                        }
+                        
+                    }
+
+                }
+
+
+                
+                // save sa trans_sales_charges
+                $total_charge = 0;
+                if(count($trans_charge_cart) > 0){
+                    $trans_sales_charge_cart = array();
+                    foreach ($trans_charge_cart as $charge_id => $ch) {
+                      
+                        $total_charge += $charges[$charge_id]['amount'];
+                    }
+                    
+                }
+
+               
+                // echo $total_charge;exit;
+
+               // print_r($charges);exit;
+                // echo $total_charge;exit;
+                // echo "<pre>",print_r($total_charge),"</pre>";die();
+                $tax = $this->get_tax_rates(false);
+                $taxable_amount = $total_gross;
+                $not_taxable_amount = 0;
+                $zero_rated = 0;
+                $diplomat_count = 0;
+                $g_count = 0;
+                if(count($tax) > 0){
+
+                    if(isset($counter['zero_rated']) && $counter['zero_rated'] == 1){
+                        $rate = 1.12;
+                        // $cost = ($cost / $rate);
+                        // $rate = 0.12;
+                        $zero_rated += $total_gross / $rate;
+                        $taxable_amount -= $total_gross;
+                        $not_taxable_amount += $total_gross / $rate;
+                    }else{
+                        
+                        if(count($item_discount)>0){
+                            foreach ($trans_cart as $trans_id => $v) {
+                                $cost = $v['cost'];
+                                $total = $v['qty'] * $cost;
+
+                                if(isset($item_discount[$trans_id])){
+                                    
+                                    if($item_discount[$trans_id]['disc_code'] == 'DIPLOMAT'){
+                                        $zero_rated += $total / 1.12;
+                                        $not_taxable_amount += $total / 1.12;
+                                        $taxable_amount -= $total;
+                                    }else{
+                                        $no_tx =  $item_discount[$trans_id]['no_tax'];
+                                        if($no_tx == 1){
+                                            $not_taxable_amount += $total / 1.12;
+                                            $taxable_amount -= $total;
+                                            // die('ss');
+                                        }else{
+                                            // $with_disc = $total - $item_discount[$trans_id]['amount'];
+                                            // echo $with_disc; die();
+                                            $taxable_amount -= $item_discount[$trans_id]['amount'];
+                                        }
+                                    }
+
+                                }
+                            }
+                        }else{
+                            foreach ($trans_disc_cart as $disc_id => $dc) {
+                                $discount = 0;
+                                $rate = $dc['disc_rate'];
+
+                                $divi = $total_gross/$dc['guest'];
+                                $no_tax_persons = count($dc['persons']);
+                                $g_count = $dc['guest'];
+                                foreach($dc['persons'] as $name => $val){
+                                    if($dc['fix'] == 0){
+
+                                        $where = array('id'=>1);
+                                        $set_det = $this->site_model->get_details($where,'settings');
+                                        if($counter['type'] != 'dinein' && $counter['type'] != 'mcb' && $dc['disc_code'] == 'SNDISC' && $divi > $set_det[0]->ceiling_amount && $set_det[0]->ceiling_amount > 0){
+                                            $divi = $set_det[0]->ceiling_amount;
+                                            $divi_less = $set_det[0]->ceiling_amount;
+                                        }
+
+                                        if($counter['type'] == 'mcb' && $dc['disc_code'] == 'SNDISC' && $divi > $set_det[0]->ceiling_mcb && $set_det[0]->ceiling_mcb > 0){
+                                            $divi = $set_det[0]->ceiling_mcb;
+                                            $divi_less = $set_det[0]->ceiling_mcb;
+                                        }
+
+                                        
+                                        if($dc['disc_code'] == 'DIPLOMAT'){
+                                            $divi_less = ($divi / 1.12);
+
+                                            $zero_rated += $divi_less;
+                                            $not_taxable_amount += $divi_less;
+                                            $taxable_amount -= $divi;
+                                            $diplomat_count++;
+                                        }elseif($dc['disc_code'] == ATHLETE_CODE){
+                                            $divi_less = ($divi / 1.12);
+                                            $disc_per_person = ($rate / 100) * $divi_less;
+
+                                            $taxable_amount -= $disc_per_person;
+
+                                        }else{
+                                            if($dc['no_tax'] == 1){
+                                                $divi_less = ($divi / 1.12);
+                                                $less_vat = $divi - $divi_less;
+                                                // $not_taxable_amount += $divi_less * $no_tax_persons;
+                                                // $taxable_amount -= $divi + $less_vat;
+                                                $disc_per_person = ($rate / 100) * $divi_less;
+
+                                                $no_tax = $divi_less * $no_tax_persons;
+                                                $taxable_amount -= $divi;
+                                                // echo $not_taxable_amount.'aa';
+                                                $not_taxable_amount += $divi - $less_vat;
+                                                // echo $not_taxable_amount.'bb';
+                                            }else{
+                                                $disc_per_person = ($rate / 100) * $divi; 
+                                                // $not_taxable_amount = 0;
+                                                // $disc_persons = $disc_per_person * $no_tax_persons;
+                                                $taxable_amount -= $disc_per_person;
+                                            }
+                                        }
+
+
+                                    }else{
+                                        // $disc_per_person = $divi - $rate;
+                                        $disc_per_person = $rate;
+                                        $taxable_amount -= $disc_per_person;
+                                        // $taxable_amount -= $discount;
+                                        // $not_taxable_amount = 0; 
+                                    }
+                                }
+
+                                
+                            }
+                        }
+
+
+                    }
+
+                    // echo $not_taxable_amount; die();
+                    //remove charges 
+                   
+                        if($g_count == $diplomat_count){
+                            $zero_rated -= $total_disc;
+                               
+                        }
+
+                    
+                        if($g_count == $diplomat_count){
+                            $not_taxable_amount -= $total_disc;
+                            
+                        }
+
+
+
+                    // if(LOCALSYNC){
+                    //     if(count($trans_sales_zero_rated) > 0)
+                    //         $this->sync_model->add_trans_sales_zero_rated($sales_id);
+
+                    //     if(count($trans_sales_no_tax) > 0)
+                    //         $this->sync_model->add_trans_sales_no_tax($sales_id);
+                    // }
+                    if($zero_rated != 0 && $total_disc != 0){
+                        if($g_count == $diplomat_count){
+                            $taxable_amount = 0;
+                        }
+                    }
+
+                    $am = $taxable_amount;
+                    $trans_tax = 0;
+                    foreach ($tax as $tax_id => $tx) {
+                        $rate = ($tx['rate'] / 100);
+                        $tax_value = ($am / ($rate + 1) ) * $rate;
+                        // ($am / 1.12) * .12
+                        $trans_tax += $tax_value;
+                    }
+                    
+                    $vat_sales_txt = $taxable_amount / 1.12;
+
+
+                }
+             
+
+
+                //for update sa trans_Sales ng iba pang details
+                $trans_sales_details = array(
+                    "total_gross"       => $total_gross,
+                    "total_discount" => $total_disc,
+                    "total_charges" => $total_charge,
+                    "zero_rated" => $zero_rated,
+                    "no_tax" => $not_taxable_amount,
+                    "tax" => $trans_tax,
+                    "local_tax" => $local_tax,
+                    "vat_sales_txt" => $vat_sales_txt,
+                );               
+                
+                echo json_encode($trans_sales_details);
+                
+            }
+
+          
+        
     }
 
 }

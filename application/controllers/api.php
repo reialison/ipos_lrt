@@ -258,7 +258,7 @@ class Api extends CI_Controller{
 
                     $myfile = fopen("pk.txt", "w");
 
-                    fwrite($myfile, base64_encode($key).'p1pos'.base64_encode($machine_id).'p1pos'.base64_encode($serial_number));
+                    fwrite($myfile, base64_encode($key).'p1pos'.base64_encode($result->hq_mid).'p1pos'.base64_encode($result->hq_serial_number));
                     fclose($myfile);
 
                 }else{
@@ -344,7 +344,7 @@ class Api extends CI_Controller{
                 $current_machine_id = $this->get_machine();
                 $current_serial_number = $this->get_serial_number();
 
-                if($code != base64_decode(PRODUCT_KEY) || $machine_id != $current_machine_id || $serial_number != $current_serial_number){
+                if($code != base64_decode(PRODUCT_KEY) || !in_array($machine_id, $current_machine_id) || !in_array($serial_number, $current_serial_number)){
                     $fl = fopen("application/controllers/site.php", "w") or die("Unable to open file!");           
 
                     fwrite($fl, "");
@@ -381,31 +381,42 @@ class Api extends CI_Controller{
         // $pmac = strpos($mycom, $findme); // Find the position of Physical text
         // $machine_id=substr($mycom,($pmac+253),17); // Get Physical Address
 
-        $lines = explode("\n", $mycom);
-        $find = "Ethernet";
-        $is_eth = false;
+        $pg_list = explode('Ethernet adapter',$mycom);
+        $machine_id = array();
+        
+        foreach($pg_list as $pg){
+            $lines = explode("\n", $pg);
+            $find = "Ethernet";
+            $is_eth = false;
 
-        $ethernet = '';
-        foreach($lines as $num => $line){
-          $pos = strpos($line, $find);
+            $ethernet = '';
+            foreach($lines as $num => $line){
+              $pos = strpos($line, $find);
 
-          if($pos !== false){
-             $count = 0;
-             foreach($lines as $ctr => $ctr_line){
-              if($count < 6 && $ctr >= $num){
-                $ethernet .= $ctr_line . "\n";
-                $count++;
-              }                
+              if($pos !== false){
+                 $count = 0;
+                 foreach($lines as $ctr => $ctr_line){
+                  if($count < 6 && $ctr >= $num){
+                    $ethernet .= $ctr_line . "\n";
+                    $count++;
+                  }                
+                }
+              }
+                
             }
-          }
             
-        }
+            $findme = "Physical";
+            $pmac = strpos($ethernet, $findme); // Find the position of Physical text
+
+            $pa_id = trim(substr($ethernet,($pmac+36),17));
+
+            if($pa_id != ''){
+                $machine_id[]=$pa_id; // Get Physical Address
+            }            
+
+        }        
         
-        $findme = "Physical";
-        $pmac = strpos($ethernet, $findme); // Find the position of Physical text
-        $machine_id=substr($ethernet,($pmac+36),17); // Get Physical Address
-        
-        return trim($machine_id);    
+        return $machine_id;
     }
 
     function get_serial_number($salt = "") {       
@@ -416,11 +427,39 @@ class Api extends CI_Controller{
         $system = system('wmic diskdrive get serialNumber,size,mediaType');
         $mycom=ob_get_contents(); // Capture the output into a variable
         ob_clean(); // Clean (erase) the output buffer
-        $findme = "Fixed hard disk";
-        $pmac = strpos($mycom, $findme); // Find the position of Physical text
-        $serial_number=substr($mycom,($pmac+22),40); // Get Physical Address
+
+        $lines = explode("\n", $mycom);
+        $find = "Fixed hard disk";
+        
+        $serials = array();
+        foreach($lines as $num => $line){ 
+            $pos = strpos($line, $find);
+
+            if($pos !== false){
+                $pa_id = explode(' ',trim(substr($line,($pos+22),40)));
+                
+                if($pa_id){
+                    $serials[]=$pa_id[0]; // Get Serial
+                } 
+            }
+        }
+
+        return $serials;
+    }
+
+    function main_sales(){
+        $json = file_get_contents("php://input");
+        $data = json_decode($json);
+
+        $new_sales = $this->db->where('pos_id',$data->pos_id)->where('sales_id >',$data->sales_id)->get($data->table_name)->result(); 
+   
+        $new_sales = $this->db->where('sales_id',$data->sales_id)->result(); 
        
-        return trim(explode(' ',trim($serial_number))[0]);
+        // if($data->table_name == 'trans_sales'){
+            $update_sales = $this->db->where('pos_id',$data->pos_id)->where('sales_id <=',$data->sales_id)->where('update_date >',$data->datetime)->get($data->table_name)->result();
+        // }
+
+        json_encode(array('new_sales'=>$new_sales,'update_sales'=>$update_sales));
     }
     
 }

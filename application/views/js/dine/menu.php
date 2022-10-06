@@ -18,7 +18,7 @@ $(document).ready(function(){
 								goTo('menu/form/'+id);
 							 },
 			noBtn1 		:   false,
-			btn1Txt		: 	"<i class='fa fa-upload '></i>Master Upload",				 				 	
+			btn1Txt		: 	"<i class='fa fa-upload '></i>Upload",				 				 	
 			btn1 		: 	function(data){
 								bootbox.dialog({
 								  message: baseUrl+'menu/upload_excel_form',
@@ -48,42 +48,10 @@ $(document).ready(function(){
 								  }
 								});
 							},
-			<?php if (ENCRYPT_TXT_FILE){ ?>
+			<?php if (ENCRYPT_TXT_FILE){ ?>			
 			noBtn2 		:   false,
-			btn2Txt		: 	"<i class='fa fa-uplaod '></i> Add/Update",				 				 	
+			btn2Txt		: 	"<i class='fa fa-download '></i> Download",				 				 	
 			btn2		: 	function(data){
-								bootbox.dialog({
-								  message: baseUrl+'menu/update_upload_excel_form',
-								  title: "Select Excel Menu File",
-								  buttons: {
-								    submit: {
-								      label: "<i class='fa fa-check'></i>Upload",
-								      className: "btn-success rFormSubmitBtn",
-								      callback: function() {
-								      		var noError = $('#update-upload-form').rOkay({
-								      			goSubmit 	: 	false
-								      		});
-								      		if(noError){
-								      			$.loadPage();
-								      			$('#update-upload-form').submit();
-								      			rMsg(data.msg,'success');
-								      		}
-								      		return false;
-								      }
-								    },
-								    close:{
-								    	label: "Close",
-								    	className: "btn-default",
-								    	callback: function() {
-								    			return true;
-								    	}
-								    }
-								  }
-								});
-							},
-			noBtn3 		:   false,
-			btn3Txt		: 	"<i class='fa fa-download '></i> Download",				 				 	
-			btn3		: 	function(data){
 								window.location.href = baseUrl + "menu/download_menus";
 							},
 

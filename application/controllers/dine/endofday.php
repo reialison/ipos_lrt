@@ -568,6 +568,7 @@ class Endofday extends Cashier {
                     $this->rockwell_file($z_read_id);
                 }
                 else if (MALL == 'miaa') {
+                    $this->miaa_file_regen($read_date,false);
                     $this->miaa_xfile($z_read_id);
                 }
                 else if (MALL == 'shangrila') {

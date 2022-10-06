@@ -5990,7 +5990,7 @@ $(document).ready(function(){
 			var discount = data.discount;
 			var local_tax = data.local_tax;
 			$("#total-txt").number(total,2);
-			$("#discount-txt").number(discount,2);
+			$("#discount-amount-txt").number(discount,2);
 			if($("#local-tax-txt").exists()){
 				$("#local-tax-txt").number(local_tax,2);
 			}
@@ -7379,7 +7379,7 @@ $(document).ready(function(){
 			$('#coupon-enter-btn').attr('mode','search');
 		});
 		/* End of COUPON */
-		$('#cancel-cash-btn,#transactions-close-btn,#cancel-debit-btn,#cancel-smac-btn,#cancel-eplus-btn,#cancel-online-deal-btn,#cancel-cust-deposits-btn,#cancel-credit-btn,#cancel-gc-btn,#cancel-coupon-btn,#cancel-loyalty-btn,#cancel-foodpanda-btn,#cancel-picc-btn,#cancel-gcash-btn,#cancel-paymaya-btn,#cancel-wechat-btn,#cancel-alipay-btn,#cancel-egift-btn,#cancel-paypal-btn,#cancel-grabfood-btn,#cancel-lalafood-btn,#cancel-grabmart-btn,#cancel-pickaroo-btn,#cancel-mofopaymongo-btn,#cancel-grabpaybdo-btn,#cancel-pmayaewallet-btn,#cancel-pmayacredcard-btn,#cancel-tmgbtransfer-btn,#cancel-fppickupcash-btn,#cancel-fppickonlne-btn,#cancel-gfselfpickup-btn,#cancel-receivables-btn,#cancel-hlmogobt-btn,#cancel-hlmogocash-btn,#cancel-hlmogogcash-btn,#cancel-cod-btn,#cancel-mofopmaya-btn,#cancel-fasttrack-btn,#cancel-mofocash-btn,#cancel-dineinpmayacrd-btn,#cancel-dineoutpmayacrd-btn,#cancel-smmallonline-btn,#cancel-mofopmayadinein-btn,#cancel-mofocashdinein-btn,#cancel-bdocard-btn,#cancel-mofogcash-btn,#cancel-sendbill-btn,#cancel-bdopay-btn,#cancel-loyalty-btn,#cancel-signchit-btn').click(function(){
+		$('#cancel-cash-btn,#transactions-close-btn,.transactions-close-btn,#cancel-debit-btn,#cancel-smac-btn,#cancel-eplus-btn,#cancel-online-deal-btn,#cancel-cust-deposits-btn,#cancel-credit-btn,#cancel-gc-btn,#cancel-coupon-btn,#cancel-loyalty-btn,#cancel-foodpanda-btn,#cancel-picc-btn,#cancel-gcash-btn,#cancel-paymaya-btn,#cancel-wechat-btn,#cancel-alipay-btn,#cancel-egift-btn,#cancel-paypal-btn,#cancel-grabfood-btn,#cancel-lalafood-btn,#cancel-grabmart-btn,#cancel-pickaroo-btn,#cancel-mofopaymongo-btn,#cancel-grabpaybdo-btn,#cancel-pmayaewallet-btn,#cancel-pmayacredcard-btn,#cancel-tmgbtransfer-btn,#cancel-fppickupcash-btn,#cancel-fppickonlne-btn,#cancel-gfselfpickup-btn,#cancel-receivables-btn,#cancel-hlmogobt-btn,#cancel-hlmogocash-btn,#cancel-hlmogogcash-btn,#cancel-cod-btn,#cancel-mofopmaya-btn,#cancel-fasttrack-btn,#cancel-mofocash-btn,#cancel-dineinpmayacrd-btn,#cancel-dineoutpmayacrd-btn,#cancel-smmallonline-btn,#cancel-mofopmayadinein-btn,#cancel-mofocashdinein-btn,#cancel-bdocard-btn,#cancel-mofogcash-btn,#cancel-sendbill-btn,#cancel-bdopay-btn,#cancel-loyalty-btn,#cancel-signchit-btn').click(function(){
 			// loadDivs('select-payment',false);
 			loadDivs('cash-payment',true);
 			return false;
@@ -7393,7 +7393,7 @@ $(document).ready(function(){
 		});
 		$('#print-btn').click(function(event){
 			var sales_id = $(this).attr('ref');
-			$.post(baseUrl+'cashier/print_sales_receipt_justin/'+sales_id,'',function(data)
+			$.post(baseUrl+'cashier_gift_card/print_sales_receipt_justin/'+sales_id,'',function(data)
 			{
 				if(data.js_rcps){
 					$.ajaxSetup({async: false});										
@@ -7758,7 +7758,7 @@ $(document).ready(function(){
 				// }
 				// else{
 					// $.rProgressBar();				
-					window.open(baseUrl+'reporting/print_pdf_sales/'+id+'/0', "popupWindow", "width=600,height=600,scrollbars=yes");
+					window.open(baseUrl+'reporting/print_pdf_gc/'+id+'/0', "popupWindow", "width=600,height=600,scrollbars=yes");
 					btn.goLoad({load:false});
 					return false;
 				// }

@@ -69,7 +69,8 @@ class Miaa extends Reads {
 		$mon = array('01'=>'1','02'=>'2','03'=>'3','04'=>'4','05'=>'5','06'=>'6','07'=>'7','08'=>'8','09'=>'9','10'=>'A','11'=>'B','12'=>'C');
 		$mall_db = $this->site_model->get_tbl('miaa');
 		$mall = array('tenant_code'=>$mall_db[0]->tenant_code,'sales_type'=>$mall_db[0]->sales_type);
-		$file_path = filepathisize($mall_db[0]->file_path);
+        $file_path = filepathisize('C:/MIAA/');
+		// $file_path = filepathisize($mall_db[0]->file_path);
 		$year = date('Y',strtotime($date));
         // $file_path .= $year."/";
         $eod = $this->old_grand_net_total($date);
