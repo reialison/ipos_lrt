@@ -10,6 +10,8 @@ class Dashboard extends Prints {
     public function index(){
         $data = $this->syter->spawn('dashboard');
         $today = $this->site_model->get_db_now();
+        $this->load->model('dine/manager_model');
+        $user = $this->session->userdata('user');
         // $lastZread = $this->cashier_model->get_lastest_z_read(Z_READ,$today);
         // $lastGT = 0;
         // if(count($lastZread) > 0){
@@ -18,8 +20,6 @@ class Dashboard extends Prints {
         $lastGT = 0;
         // $gt = $this->old_grand_net_total($today);
         // $lastGT = $gt['true_grand_total'];
-        $this->load->model('dine/manager_model');
-        $user = $this->session->userdata('user');
         $this->manager_model->add_event_logs($user['id'],"Back Office Function","View");
         $todaySales = 0;
         $todayTransNo = 0;
@@ -39,7 +39,9 @@ class Dashboard extends Prints {
             $todaySales = (isset($ts[0]->today_sales) ? $ts[0]->today_sales : 0);
             $todayTransNo = $ts[0]->today_no_trans; 
         }
-
+        $data['page_title'] = '';
+        if($user['access'] == 'all' || $user['access'] == 'dashboard' || $user['access'] == 'dashboard,'){
+        $data['page_title'] = fa('icon-speedometer')." Sales Dashboard";
         $data['code'] = dashboardMain($lastGT,$todaySales,$todayTransNo);
         $data['sideBarHide'] = true;
         $data['add_css'] = array('css/morris/morris.css');
@@ -47,6 +49,7 @@ class Dashboard extends Prints {
         $data['page_no_padding'] = true;
         $data['load_js'] = 'dine/dashboard.php';
         $data['use_js'] = 'dashBoardJs';
+        }
         // $data['add_js'] = 'js/site_list_forms.js';
         $this->load->view('page',$data);
     }
